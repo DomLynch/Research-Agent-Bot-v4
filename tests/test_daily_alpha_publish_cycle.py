@@ -6455,7 +6455,7 @@ def test_sync_submission_decisions_polls_terminal_resubmit_target_object(
     assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
 
 
-def test_sync_submission_decisions_keeps_queued_clean_terminal_resubmit_pending(
+def test_sync_submission_decisions_records_complete_terminal_resubmit_revise(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "repo"
@@ -6511,16 +6511,13 @@ def test_sync_submission_decisions_keeps_queued_clean_terminal_resubmit_pending(
         (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8"),
     )
     assert summary["checked"] == 1
-    assert summary["pending"] == 1
+    assert summary["pending"] == 0
+    assert summary["updated"] == 2
     assert summary["published"] == 0
     assert promoted["submission_id"] == "object-reviewed"
-    assert promoted["status"] == "submitted_to_researka"
-    assert promoted["final_verdict"] == "pending"
-    assert promoted["pending_reason"] == "terminal_resubmit_job_queued"
-    assert promoted["decision_poll"] == {
-        "final_verdict": "pending",
-        "pending_reason": "terminal_resubmit_job_queued",
-    }
+    assert promoted["status"] == "reviewer_revise"
+    assert promoted["final_verdict"] == "revise"
+    assert "pending_reason" not in promoted
     assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
 
 
@@ -17457,8 +17454,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience: cross-construct supply chain performance "
-        "boundary with firm performance caveat"
+        "supply chain resilience: supply chain performance, firm performance"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17560,8 +17556,11 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert "Outcome-family boundary:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "cross-construct supply chain performance boundary" in payload["title"]
-    assert "firm performance caveat" in payload["title"]
+    assert "cross-construct" not in payload["title"]
+    assert "boundary" not in payload["title"]
+    assert "caveat" not in payload["title"]
+    assert "supply chain performance" in payload["title"]
+    assert "firm performance" in payload["title"]
     assert "firm performance is null/mixed in separate receipt(s)" in markdown
     assert "direction-bearing receipts: 3" in markdown
     assert "context/antecedent/model receipts: 1 excluded from effect support" in markdown
@@ -17650,9 +17649,14 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         date="2026-06-29T02-30-00Z",
     )
 
-    assert repaired_payload["metadata"]["topic"] == "supply_chain_margin"
+    assert repaired_payload["topic"] == "supply chain resilience"
+    assert repaired_payload["requested_topic"] == "supply_chain_margin"
+    assert repaired_payload["metadata"]["topic"] == "supply chain resilience"
+    assert repaired_payload["metadata"]["requested_topic"] == "supply_chain_margin"
     assert repaired_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert repaired_payload["title"].startswith("supply chain resilience: cross-construct")
+    assert repaired_payload["title"] == (
+        "supply chain resilience: supply chain performance, firm performance"
+    )
     assert "supply chain margin" not in repaired_payload["title"].lower()
     assert "supply chain margin" not in repaired_payload["abstract"].lower()
     assert "supply chain margin" not in repaired_payload["markdown"].lower()
@@ -17665,13 +17669,21 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         date="2026-06-29T02-45-00Z",
     )
 
-    assert productivity_payload["metadata"]["topic"] == "supply_chain_resilience_productivity"
+    assert productivity_payload["topic"] == "supply chain resilience"
+    assert productivity_payload["requested_topic"] == "supply_chain_resilience_productivity"
+    assert productivity_payload["metadata"]["topic"] == "supply chain resilience"
+    assert productivity_payload["metadata"]["requested_topic"] == (
+        "supply_chain_resilience_productivity"
+    )
     assert productivity_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert productivity_payload["title"].startswith("supply chain resilience: cross-construct")
+    assert productivity_payload["title"] == (
+        "supply chain resilience: supply chain performance, firm performance"
+    )
     assert "productivity" not in productivity_payload["title"].lower()
     assert "productivity" not in productivity_payload["abstract"].lower()
     assert "productivity" not in productivity_payload["markdown"].lower()
-    assert "firm performance caveat" in productivity_payload["title"]
+    assert "firm performance" in productivity_payload["title"]
+    assert "caveat" not in productivity_payload["title"]
 
     sales_papers: list[dict[str, Any]] = []
     for paper in papers:
@@ -17687,9 +17699,31 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         date="2026-06-29T03-00-00Z",
     )
 
-    assert sales_payload["metadata"]["topic"] == "resilience_sales"
+    assert sales_payload["topic"] == "supply chain resilience"
+    assert sales_payload["requested_topic"] == "resilience_sales"
+    assert sales_payload["metadata"]["topic"] == "supply chain resilience"
+    assert sales_payload["metadata"]["requested_topic"] == "resilience_sales"
     assert sales_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert sales_payload["title"].startswith("supply chain resilience: cross-construct")
+    assert sales_payload["title"] == (
+        "supply chain resilience: supply chain performance, firm performance"
+    )
+    source_title_terms = {
+        token
+        for source in sales_payload["source_bundle"]
+        for token in publish_literature.title_key(
+            source.get("title") or source.get("paper_title") or "",
+        ).split()
+        if len(token) >= 3
+    }
+    public_anchor_terms = {
+        token
+        for token in publish_literature.title_key(
+            f"{sales_payload['title']} {sales_payload['metadata']['topic']}",
+        ).split()
+        if len(token) >= 3
+    }
+    assert public_anchor_terms <= source_title_terms
+    assert not (public_anchor_terms & {"boundary", "caveat", "construct", "cross", "sales"})
     assert "resilience sales" not in sales_payload["title"].lower()
     assert "resilience sales" not in sales_payload["abstract"].lower()
     assert "resilience sales" not in sales_payload["markdown"].lower()

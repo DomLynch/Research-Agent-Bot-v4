@@ -5700,10 +5700,16 @@ def _sync_submission_decisions_unlocked(
                 "detail": str(exc)[:180],
             })
             continue
+        decision_status = _norm(decision.get("status") if isinstance(decision, dict) else "")
+        decision_verdict = _norm(decision.get("decision") if isinstance(decision, dict) else "")
         if (
             ledger.get("pending_reason") == "terminal_resubmit_job_queued"
             and isinstance(decision, dict)
             and _source_literature_clean_terminal_resubmit(decision)
+            and decision_status not in {"complete", "completed"}
+            and decision_verdict not in {
+                _DECISION_ACCEPTED, _DECISION_REJECTED, _DECISION_REVISE,
+            }
             and not decision.get("publication")
         ):
             ledger["researka_decision"] = decision
@@ -5721,6 +5727,8 @@ def _sync_submission_decisions_unlocked(
             decision=decision,
             page_fetcher=page_fetcher,
         )
+        if final != _DECISION_PENDING:
+            ledger.pop("pending_reason", None)
         summary[_DECISION_PENDING] += int(final == _DECISION_PENDING)
         summary["published"] += int(final == _DECISION_ACCEPTED)
         if final == _DECISION_PENDING and _stale_pending_decision(

@@ -142,6 +142,9 @@ _SOURCE_LABEL_EDGE_TOKENS = frozenset({
     "and", "as", "by", "for", "from", "in", "into", "of", "on", "or", "the",
     "to", "with",
 })
+_SOURCE_TITLE_UNSAFE_PUBLIC_TOKENS = frozenset({
+    "boundary", "caveat", "construct", "cross",
+})
 _DIRECTIONAL_TOPUP_QUERY_TOKENS = (
     "profitability", "revenue", "sales", "productivity", "margin", "returns",
     "employment", "price", "risk", "volatility",
@@ -1753,6 +1756,70 @@ def _source_grounded_topic_label(topic: str, papers: list[Json], profile_slug: s
     return sorted(candidates, key=lambda item: (-counts[item], -len(item.split()), order[item]))[0]
 
 
+def _source_title_words(papers: list[Json]) -> set[str]:
+    return {
+        token
+        for paper in papers
+        for token in title_key(
+            paper.get("title") or paper.get("paper_title") or "",
+        ).split()
+        if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
+    }
+
+
+def _source_title_supported_phrase(label: str, source_words: set[str]) -> str:
+    tokens = [
+        token for token in title_key(label).split()
+        if (
+            len(token) >= 3
+            and token not in _GENERIC_TOPIC_TOKENS
+            and token in source_words
+        )
+    ]
+    return " ".join(dict.fromkeys(tokens))
+
+
+def _source_title_aligned_submission_labels(
+    topic_label: str, endpoint_labels: list[str], papers: list[Json],
+) -> tuple[str, str]:
+    source_words = _source_title_words(papers)
+    if not source_words:
+        return topic_label, topic_label
+    public_topic = (
+        _source_title_supported_phrase(topic_label, source_words) or topic_label
+    )
+    endpoint_phrases = [
+        phrase for phrase in dict.fromkeys(
+            _source_title_supported_phrase(label, source_words)
+            for label in endpoint_labels
+        )
+        if phrase and phrase != public_topic and len(phrase.split()) >= 2
+    ]
+    if endpoint_phrases:
+        return public_topic, f"{public_topic}: {', '.join(endpoint_phrases[:3])}"
+    return public_topic, public_topic
+
+
+def _source_title_alignment_needed(
+    requested_topic: str, generated_title: str, topic_label: str, papers: list[Json],
+) -> bool:
+    source_words = _source_title_words(papers)
+    if not source_words:
+        return False
+    title_tokens = set(title_key(generated_title).split())
+    if title_tokens & _SOURCE_TITLE_UNSAFE_PUBLIC_TOKENS:
+        return True
+    label_tokens = set(title_key(topic_label).split())
+    topic_tokens = [
+        token for token in title_key(requested_topic).split()
+        if len(token) >= 3 and token not in _GENERIC_TOPIC_TOKENS
+    ]
+    return any(
+        token not in source_words and token not in label_tokens
+        for token in topic_tokens
+    )
+
+
 def _bounded_signal_sentence(
     topic: str,
     endpoints_by_label: dict[str, list[str]],
@@ -3011,11 +3078,28 @@ def payload(
         if non_bio and non_bio_signal_parts else
         "one bounded, context-dependent signal across receipts"
     )
+    generated_title = f"{title_topic_label}: {title_tail}"
+    if non_bio and _source_title_alignment_needed(
+        requested_topic, generated_title, topic_label, selected,
+    ):
+        submission_topic, submission_title = _source_title_aligned_submission_labels(
+            topic_label,
+            [
+                *title_directional_endpoints,
+                *comparator_title_endpoints,
+                *nullish_endpoints,
+                *display_outcome_families,
+            ],
+            selected,
+        )
+    else:
+        submission_topic, submission_title = requested_topic, generated_title
     metadata: dict[str, Any] = {
         "article_type": "alpha_memo",
         "category": category,
         "domain_slug": profile.slug,
-        "topic": requested_topic,
+        "topic": submission_topic,
+        "requested_topic": requested_topic,
         "topic_label": topic_label,
     }
     metadata.update(revision_metadata)
@@ -3042,11 +3126,12 @@ def payload(
         "domain": profile.as_metadata(),
         "domain_slug": profile.slug,
         "category": category,
-        "title": f"{title_topic_label}: {title_tail}",
-        "human_title": f"{title_topic_label}: {title_tail}",
+        "title": submission_title,
+        "human_title": submission_title,
         "abstract": safe_excerpt(abstract_text),
         "summary": safe_excerpt(abstract_text),
-        "topic": requested_topic,
+        "topic": submission_topic,
+        "requested_topic": requested_topic,
         "metadata": metadata,
         "markdown": markdown,
         "citations": bundle,
