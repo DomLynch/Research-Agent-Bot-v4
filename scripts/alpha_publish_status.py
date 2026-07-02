@@ -8,6 +8,12 @@ from typing import Any
 Json = dict[str, Any]
 
 
+def _dict_rows(value: Any) -> list[Json]:
+    if not isinstance(value, list):
+        return []
+    return [row for row in value if isinstance(row, dict)]
+
+
 class CycleStatus(StrEnum):
     STARTED = "started"
     PUBLISHED = "published"
@@ -275,16 +281,20 @@ def no_candidate_reason(considered: list[Json]) -> str:
 
 
 def publish_summary(ledger: Json) -> Json:
-    considered = [r for r in ledger.get("considered") or [] if isinstance(r, dict)]
-    attempts = [r for r in ledger.get("cycle_attempts") or [] if isinstance(r, dict)]
+    raw_considered = ledger.get("considered")
+    considered = _dict_rows(raw_considered)
+    considered_count = (
+        max(0, int(raw_considered))
+        if isinstance(raw_considered, int)
+        else len(considered)
+    )
+    attempts = _dict_rows(ledger.get("cycle_attempts"))
     blockers: list[str] = []
     for row in considered:
         blockers.append(str(row.get("status") or ""))
         for blocker in row.get("blockers") or []:
             blockers.append(str(blocker))
-    for row in ledger.get("source_literature_fallback_attempts") or []:
-        if not isinstance(row, dict):
-            continue
+    for row in _dict_rows(ledger.get("source_literature_fallback_attempts")):
         status_text = str(row.get("status") or "")
         reason_text = str(row.get("reason") or "")
         if status_text and status_text != "selected":
@@ -333,7 +343,7 @@ def publish_summary(ledger: Json) -> Json:
         "status": status,
         "submitted": int(ledger.get("submitted") or 0),
         "published": int(ledger.get("published") or 0),
-        "considered": len(considered),
+        "considered": considered_count,
         "attempts": len(attempts),
         "queue_counts": ledger.get("queue_counts") or {},
         "top_blockers": top_blockers,

@@ -108,6 +108,20 @@ def test_publish_summary_contains_operator_blocker_fields() -> None:
     }
 
 
+def test_publish_summary_accepts_considered_count_from_summary_ledger() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.PUBLISHED.value,
+        "submitted": 1,
+        "published": 1,
+        "considered": 2,
+        "top_blockers": {"published": 1},
+    })
+
+    assert summary["status"] == "published"
+    assert summary["considered"] == 2
+    assert summary["published"] == 1
+
+
 def test_publish_summary_counts_incomplete_fullraw_receipt() -> None:
     summary = publish_summary({
         "status": CycleStatus.CANDIDATE_REFRESH_FAILED.value,
