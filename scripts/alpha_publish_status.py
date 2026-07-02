@@ -155,6 +155,81 @@ def next_action_for_status(status: str) -> str:
     return "inspect_ledger"
 
 
+def _norm(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
+def _clean_external_resubmit_decision(decision: Any) -> bool:
+    if not isinstance(decision, dict):
+        return False
+    notes = decision.get("notes") or decision.get("required_revisions") or []
+    note_text = _norm(notes) if isinstance(notes, str) else " ".join(_norm(note) for note in notes)
+    if (
+        _norm(decision.get("decision")) != DecisionVerdict.REVISE.value
+        or "external author must resubmit" not in note_text
+    ):
+        return False
+    if any(
+        decision.get(key) not in (None, "", [], {})
+        for key in (
+            "required_revisions",
+            "major_issues",
+            "minor_issues",
+            "failed_checks",
+            "gate_failures",
+        )
+    ):
+        return False
+    verdicts = {
+        _norm(decision.get("claim_support_verdict")),
+        _norm(decision.get("overclaim_verdict")),
+        _norm(decision.get("synthesis_quality_verdict")),
+    }
+    return not verdicts & {"unsupported", "overclaim", "weak", "insufficient", "failed"}
+
+
+def _terminal_resubmit_attempted(ledger: Json) -> bool:
+    rows = list(ledger.get("source_literature_fallback_attempts") or [])
+    fallback = ledger.get("source_literature_fallback")
+    if isinstance(fallback, dict):
+        rows.append(fallback)
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if _norm(row.get("terminal_resubmit_status")) in {"accepted", "queued"}:
+            return True
+        if any(
+            row.get(key)
+            for key in (
+                "terminal_resubmit_queued",
+                "terminal_resubmit_queued_job_id",
+                "terminal_resubmit_poll_object_id",
+                "terminal_resubmit_submission",
+            )
+        ):
+            return True
+    for row in ledger.get("cycle_attempts") or []:
+        if not isinstance(row, dict):
+            continue
+        if _norm(row.get("pending_reason")) in {
+            "terminal_resubmit_job_queued",
+            "same_parent_terminal_resubmit_queued",
+        }:
+            return True
+    return False
+
+
+def platform_publish_handoff_blocked(ledger: Json) -> bool:
+    return (
+        str(ledger.get("status") or "") == CycleStatus.REVIEWER_REVISE.value
+        and int(ledger.get("submitted") or 0) > 0
+        and int(ledger.get("published") or 0) == 0
+        and not ledger.get("public_url")
+        and _clean_external_resubmit_decision(ledger.get("researka_decision"))
+        and _terminal_resubmit_attempted(ledger)
+    )
+
+
 def effective_cycle_status(ledger: Json) -> str:
     status = str(ledger.get("status") or "")
     attempts = [r for r in ledger.get("cycle_attempts") or [] if isinstance(r, dict)]
@@ -220,8 +295,9 @@ def publish_summary(ledger: Json) -> Json:
             if isinstance(event, dict) and event.get("status"):
                 blockers.append("fullraw_" + str(event.get("status")))
     status = effective_cycle_status(ledger)
+    handoff_blocked = platform_publish_handoff_blocked(ledger)
     if status and status not in SUBMIT_SUCCESS_STATUSES | PENDING_SUCCESS_STATUSES | {CycleStatus.STARTED.value}:
-        blockers.append(status)
+        blockers.append("platform_publish_handoff_blocked" if handoff_blocked else status)
     if (
         status == CycleStatus.STARTED.value
         and not considered
@@ -249,6 +325,8 @@ def publish_summary(ledger: Json) -> Json:
         and {"fullraw_probe_busy", "fullraw_complete_receipt_missing"} & set(top_blockers)
     ):
         next_action = "wait_for_fullraw_completion"
+    if handoff_blocked:
+        next_action = "fix_researka_publish_handoff_or_run_admin_publish_job"
     summary = {
         "status": status,
         "submitted": int(ledger.get("submitted") or 0),

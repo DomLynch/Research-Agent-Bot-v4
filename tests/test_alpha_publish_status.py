@@ -153,6 +153,44 @@ def test_publish_summary_uses_terminal_status_for_reviewer_rejection() -> None:
     assert summary["top_blockers"]["reviewer_rejected"] == 1
 
 
+def test_publish_summary_flags_clean_terminal_resubmit_handoff_blocker() -> None:
+    summary = publish_summary({
+        "status": CycleStatus.REVIEWER_REVISE.value,
+        "submitted": 1,
+        "published": 0,
+        "public_url": None,
+        "final_verdict": "revise",
+        "researka_decision": {
+            "decision": "revise",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "required_revisions": [],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "claim_support_verdict": "supported",
+            "overclaim_verdict": "none",
+            "synthesis_quality_verdict": "strong",
+            "rubric_scores": {
+                "claim_evidence_alignment": 5,
+                "source_grounding": 5,
+                "synthesis_quality": 5,
+            },
+        },
+        "source_literature_fallback": {
+            "status": "selected",
+            "reason": "ok",
+            "terminal_resubmit_status": "accepted",
+            "terminal_resubmit_poll_object_id": "resubmit-1",
+            "terminal_resubmit_queued_job_id": "job-1",
+        },
+    })
+
+    assert summary["top_blockers"] == {"platform_publish_handoff_blocked": 1}
+    assert summary["next_action"] == "fix_researka_publish_handoff_or_run_admin_publish_job"
+    assert "reviewer_revise" not in summary["top_blockers"]
+
+
 def test_publish_summary_prefers_queued_terminal_resubmit_attempt() -> None:
     summary = publish_summary({
         "status": CycleStatus.REVIEWER_REVISE.value,
