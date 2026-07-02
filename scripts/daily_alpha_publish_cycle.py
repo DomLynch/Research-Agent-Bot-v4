@@ -2364,7 +2364,9 @@ def _resumable_source_literature_payloads(
 
 def _previous_source_literature_payload_papers(
     runs_root: Path, domain: str | None, topic: str, min_sources: int,
+    *, parent_submission_id: str = "",
 ) -> list[Json]:
+    parent = str(parent_submission_id or "").strip()
     for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if (
@@ -2375,6 +2377,8 @@ def _previous_source_literature_payload_papers(
             continue
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
+            continue
+        if parent and str(ledger.get("submission_id") or "").strip() != parent:
             continue
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
@@ -2389,15 +2393,28 @@ def _previous_source_literature_payload_papers(
             paper for paper in evidence.get("direct_source_papers") or []
             if isinstance(paper, dict)
         ] if isinstance(evidence, dict) else []
+        source_keys = {
+            publish_literature.source_identity_key(source)
+            for source in source_bundle if isinstance(source, dict)
+        } if isinstance(source_bundle, list) else set()
+        direct_keys = {
+            publish_literature.source_identity_key(paper)
+            for paper in direct_papers
+        }
         if (
             isinstance(source_bundle, list)
             and len(source_bundle) >= min_sources
+            and not _source_literature_payload_bundle_blocker(payload, min_sources)
             and isinstance(evidence, dict)
             and int(evidence.get("direct_source_count") or 0) >= min_sources
             and publish_literature.substantive_fact_count(direct_papers) >= min_sources
             and publish_literature.source_identity_count(
                 direct_papers, require_substantive=True,
             ) >= min_sources
+            and len(source_keys & direct_keys) >= min_sources
+            and not publish_literature.source_outlet_diversity_below_min(
+                direct_papers, min_sources,
+            )
         ):
             return direct_papers
     return []
@@ -7282,6 +7299,7 @@ def run_cycle(
                 if literature_topic in repair_topic_set else {}
             )
             terminal_resubmit_reused_payload = False
+            terminal_resubmit_review_supported_override = ""
             if resumed is not None:
                 papers = resumed[2]
                 ok, reason = True, "ok"
@@ -7295,6 +7313,9 @@ def run_cycle(
                 ):
                     papers = _previous_source_literature_payload_papers(
                         runs_root, profile.slug, literature_topic, min_submit_sources,
+                        parent_submission_id=_resubmission_parent_submission_id(
+                            repair_decision,
+                        ),
                     )
                     terminal_resubmit_reused_payload = bool(papers)
                 if not papers:
@@ -7315,6 +7336,13 @@ def run_cycle(
                     literature_topic, papers, min_submit_sources, profile.slug,
                     require_substantive_sources=True,
                 )
+                if (
+                    terminal_resubmit_reused_payload
+                    and reason == "directional_receipt_floor_below_min"
+                    and _source_literature_parented_terminal_resubmit(repair_decision)
+                ):
+                    terminal_resubmit_review_supported_override = reason
+                    ok, reason = True, "ok"
                 if (
                     not ok
                     and reason in {
@@ -7392,6 +7420,10 @@ def run_cycle(
                 fallback_attempt["parent_submission_id"] = (
                     _resubmission_parent_submission_id(repair_decision)
                 )
+                if terminal_resubmit_review_supported_override:
+                    fallback_attempt["terminal_resubmit_review_supported_override"] = (
+                        terminal_resubmit_review_supported_override
+                    )
             if literature_topic in repair_topic_set:
                 fallback_attempt["repair_submission"] = True
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)

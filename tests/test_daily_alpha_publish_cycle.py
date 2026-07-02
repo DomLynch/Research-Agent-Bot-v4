@@ -12878,6 +12878,12 @@ def test_parented_terminal_resubmit_reuses_previous_payload_sources(
             "resubmission": {"allowed": True},
         },
     })
+    assert daily._previous_source_literature_payload_papers(
+        root, "longevity_research", topic, 5, parent_submission_id="wrong-parent",
+    ) == []
+    assert len(daily._previous_source_literature_payload_papers(
+        root, "longevity_research", topic, 5, parent_submission_id="sub-clean-old",
+    )) == 5
 
     def fail_fresh_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         raise AssertionError("terminal resubmit should reuse the previous payload papers")
@@ -12918,6 +12924,155 @@ def test_parented_terminal_resubmit_reuses_previous_payload_sources(
     assert ledger["submitted_topic"] == topic
     attempt = ledger["source_literature_fallback_attempts"][0]
     assert attempt["terminal_resubmit_reused_payload"] is True
+    assert attempt["selected_source_count"] == 5
+    assert attempt["selected_source_fact_count"] == 5
+    assert attempt["selected_source_identity_count"] == 5
+    assert publish_literature.source_outlet_count(submitted_payloads[0]["source_bundle"]) == 5
+
+
+def test_supported_business_terminal_resubmit_can_reuse_boundary_payload(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "digital_transformation_firm"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    outlets = (
+        "Alpha Strategy Journal",
+        "Beta Transformation Review",
+        "Gamma Enterprise Letters",
+        "Delta Firm Quarterly",
+        "Epsilon Management Reports",
+    )
+    papers = [
+        {
+            "title": "Digital transformation and firm profitability",
+            "doi": "10.5555/dt-profit",
+            "journal_name": outlets[0],
+            "source_fact": {
+                "canonical_phrase": (
+                    "digital transformation significantly increases firm profitability"
+                ),
+                "population": "listed firms",
+                "intervention": "digital transformation",
+                "endpoint": "firm profitability",
+            },
+        },
+        *[
+            {
+                "title": [
+                    "Digital transformation in firm operating models",
+                    "Firm digital transformation governance map",
+                    "Enterprise digital transformation adoption in firms",
+                    "Digital transformation adoption scope in firms",
+                ][idx - 1],
+                "doi": f"10.5555/dt-context-{idx}",
+                "journal_name": outlets[idx],
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"implementation scope marker {idx} was documented across firms"
+                    ),
+                    "population": "firms",
+                    "intervention": "digital transformation",
+                    "endpoint": f"context marker {idx}",
+                },
+            }
+            for idx in range(1, 5)
+        ],
+    ]
+    assert daily._source_literature_boundary_quality(
+        topic,
+        papers,
+        5,
+        "business_research",
+        require_substantive_sources=True,
+    ) == (False, "directional_receipt_floor_below_min")
+    old_candidate, _old_payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic=topic,
+        papers=papers,
+        runs_root=root,
+        date="2026-06-10T17-00-00Z",
+    )
+    fp = str(old_candidate.get("memo_fingerprint") or "")
+    daily._write_json(ledger_dir / "_submitted_fingerprints.json", [{
+        "date": "2026-06-10T17-00-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": topic,
+        "run_dir": old_candidate.get("run_dir"),
+        "fingerprint": fp,
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+        "submission_id": "sub-clean-old",
+    }])
+    daily._write_json(ledger_dir / "2026-06-10T17-00-00Z.json", {
+        "domain": {"slug": "business_research"},
+        "submitted": 1,
+        "submission_id": "sub-clean-old",
+        "candidate": {
+            "topic": topic,
+            "run_dir": old_candidate.get("run_dir"),
+            "fingerprint": fp,
+        },
+        "researka_decision": {
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "required_revisions": [],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "rubric_scores": {
+                "claim_evidence_alignment": 5,
+                "source_grounding": 5,
+                "synthesis_quality": 5,
+            },
+            "resubmission": {"allowed": True},
+        },
+    })
+
+    def fail_fresh_fetch(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("reviewer-supported resubmit should reuse prior payload")
+
+    monkeypatch.setattr(daily, "_source_literature_candidate_papers", fail_fresh_fetch)
+    submitted_payloads: list[dict[str, Any]] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted_payloads.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": "sub-clean-new"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-10T18-00-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        source_literature_priority_topics=[topic],
+        submitter=submitter,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert len(submitted_payloads) == 1
+    assert submitted_payloads[0]["object_type"] == "rebuttal"
+    assert submitted_payloads[0]["parent_submission_id"] == "sub-clean-old"
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == topic
+    attempt = ledger["source_literature_fallback_attempts"][0]
+    assert attempt["terminal_resubmit_reused_payload"] is True
+    assert attempt["terminal_resubmit_review_supported_override"] == (
+        "directional_receipt_floor_below_min"
+    )
     assert attempt["selected_source_count"] == 5
     assert attempt["selected_source_fact_count"] == 5
     assert attempt["selected_source_identity_count"] == 5
