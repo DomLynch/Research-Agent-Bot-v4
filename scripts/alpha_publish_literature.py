@@ -3003,7 +3003,7 @@ def payload(
     candidate = {
         "topic": requested_topic,
         "run_dir": str(run_dir.relative_to(runs_root)),
-        "memo_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+        "memo_fingerprint": "",
         "domain": profile.as_metadata(),
     }
     agent_id = submission_agent_id(profile.slug)
@@ -3092,6 +3092,9 @@ def payload(
         )
     else:
         submission_topic, submission_title = requested_topic, generated_title
+    payload_hash_material = f"{submission_topic}\n{submission_title}\n{markdown}"
+    payload_hash = hashlib.sha256(payload_hash_material.encode("utf-8")).hexdigest()
+    candidate["memo_fingerprint"] = payload_hash
     metadata: dict[str, Any] = {
         "article_type": "alpha_memo",
         "category": category,
@@ -3135,7 +3138,7 @@ def payload(
         "citations": bundle,
         "source_bundle": bundle,
         "evidence_bundle": evidence_bundle,
-        "content_hash": "sha256:" + hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+        "content_hash": "sha256:" + payload_hash,
     }
     if parent_submission_id:
         out["object_type"] = "rebuttal"

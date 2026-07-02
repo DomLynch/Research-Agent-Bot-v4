@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as dt
 import fcntl
+import hashlib
 import io
 import json
 import os
@@ -17444,7 +17445,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         },
     ]
 
-    _candidate, payload = daily._source_literature_payload(
+    candidate, payload = daily._source_literature_payload(
         profile_slug="business_research",
         topic="supply_chain_resilience_performance",
         papers=papers,
@@ -17456,6 +17457,12 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     assert payload["title"] == (
         "supply chain resilience: supply chain performance"
     )
+    expected_fingerprint = hashlib.sha256(
+        f"{payload['topic']}\n{payload['title']}\n{payload['markdown']}".encode(),
+    ).hexdigest()
+    assert candidate["memo_fingerprint"] == expected_fingerprint
+    assert payload["content_hash"] == f"sha256:{expected_fingerprint}"
+    assert expected_fingerprint != hashlib.sha256(payload["markdown"].encode()).hexdigest()
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
     assert len(payload["source_bundle"]) == 5
