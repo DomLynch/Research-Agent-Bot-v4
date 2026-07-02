@@ -314,6 +314,19 @@ def _fullraw_backoff_key(topic: str) -> str:
     return " ".join(tokens)
 
 
+def _fullraw_family_diverse_topics(topics: list[str]) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for topic in topics:
+        family_key = _fullraw_backoff_key(topic)
+        if family_key and family_key in seen:
+            continue
+        if family_key:
+            seen.add(family_key)
+        out.append(topic)
+    return out
+
+
 def _fullraw_backoff_ttl_seconds(event: dict[str, Any]) -> float:
     ttl = _business_fullraw_backoff_seconds()
     status = str(event.get("status") or event.get("previous_status") or "")
@@ -2571,14 +2584,14 @@ def main() -> int:
                     ):
                         cached_ready_fresh_topics.append(topic)
             cache_rank_topics = non_repair_fresh_topics[:cache_rank_limit]
-            ranked_topics = [
+            ranked_topics = _fullraw_family_diverse_topics([
                 topic for _hits, _idx, topic in sorted(
                     (
                         (-_cached_fullraw_complete_hit_count(topic), idx, topic)
                         for idx, topic in enumerate(cache_rank_topics)
                     )
                 )
-            ] + non_repair_fresh_topics[cache_rank_limit:]
+            ] + non_repair_fresh_topics[cache_rank_limit:])
             selected_limit = max(
                 args.topics_per_domain,
                 args.topics_per_domain

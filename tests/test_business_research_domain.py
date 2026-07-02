@@ -7482,6 +7482,56 @@ def test_business_sweep_bounds_cached_fullraw_ranking_before_selection(
     assert cache_calls == topics[:3]
 
 
+def test_business_sweep_diversifies_fullraw_probe_families_before_selection(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    topics = [
+        "platform_strategy_network_sales",
+        "platform_strategy_network_profitability",
+        "inventory_visibility_performance",
+    ]
+    fullraw_calls: list[str] = []
+
+    def fake_fullraw(topic: str, **_kwargs: Any) -> dict[str, Any]:
+        fullraw_calls.append(topic)
+        return {
+            "status": "queue_saturated",
+            "async_status": "queued",
+            "queued_count": 6,
+            "max_queue": 6,
+            "paper_count": 0,
+            "_papers": [],
+        }
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: topics[:limit])
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", fake_fullraw)
+    monkeypatch.setattr(
+        sweep,
+        "fetch_business_facts",
+        lambda *_args, **_kwargs: ([], {"status": "failed"}),
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "1",
+        "--domains", "business_research",
+        "--runs-root", str(tmp_path / "runs"),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-07-02T02-30-00Z",
+    ])
+
+    assert sweep.main() == 2
+    assert fullraw_calls == [
+        "platform_strategy_network_sales",
+        "inventory_visibility_performance",
+    ]
+
+
 def test_business_sweep_promotes_cached_ready_beyond_rank_window_without_fullraw_queue(
     tmp_path: Path,
     monkeypatch: Any,
