@@ -6455,6 +6455,75 @@ def test_sync_submission_decisions_polls_terminal_resubmit_target_object(
     assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
 
 
+def test_sync_submission_decisions_keeps_queued_clean_terminal_resubmit_pending(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "date": "2026-05-21",
+        "domain_slug": "business_research",
+        "status": "reviewer_revise",
+        "submission_id": "parent-submission",
+        "submission": {"id": "parent-submission"},
+        "source_literature_fallback_attempts": [{
+            "topic": "supply_chain_performance",
+            "run_dir": "supply-chain-run",
+            "terminal_resubmit_submission": {
+                "status": "accepted",
+                "attempts": [{
+                    "response": {
+                        "job": {
+                            "id": "queued-job-1",
+                            "target_object_id": "object-reviewed",
+                            "status": "queued",
+                        },
+                        "submission": {
+                            "id": "object-reviewed",
+                            "metadata": {"revision_of": "parent-submission"},
+                        },
+                    },
+                }],
+            },
+        }],
+    })
+
+    summary = daily.sync_submission_decisions(
+        root,
+        fetcher=lambda submission_id: {
+            "status": "complete",
+            "decision": "revise",
+            "seen_id": submission_id,
+            "notes": ["editorial decision is terminal; external author must resubmit"],
+            "claim_support_verdict": "supported",
+            "overclaim_verdict": "none",
+            "synthesis_quality_verdict": "strong",
+            "required_revisions": [],
+            "major_issues": [],
+            "minor_issues": [],
+            "failed_checks": [],
+            "gate_failures": [],
+            "publication": None,
+            "resubmission": {"allowed": True, "parent_submission_id": "parent-submission"},
+        },
+    )
+
+    promoted = json.loads(
+        (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8"),
+    )
+    assert summary["checked"] == 1
+    assert summary["pending"] == 1
+    assert summary["published"] == 0
+    assert promoted["submission_id"] == "object-reviewed"
+    assert promoted["status"] == "submitted_to_researka"
+    assert promoted["final_verdict"] == "pending"
+    assert promoted["pending_reason"] == "terminal_resubmit_job_queued"
+    assert promoted["decision_poll"] == {
+        "final_verdict": "pending",
+        "pending_reason": "terminal_resubmit_job_queued",
+    }
+    assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
+
+
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("revise")

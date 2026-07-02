@@ -5700,6 +5700,21 @@ def _sync_submission_decisions_unlocked(
                 "detail": str(exc)[:180],
             })
             continue
+        if (
+            ledger.get("pending_reason") == "terminal_resubmit_job_queued"
+            and isinstance(decision, dict)
+            and _source_literature_clean_terminal_resubmit(decision)
+            and not decision.get("publication")
+        ):
+            ledger["researka_decision"] = decision
+            ledger["decision_poll"] = {
+                "final_verdict": _DECISION_PENDING,
+                "pending_reason": "terminal_resubmit_job_queued",
+            }
+            summary[_DECISION_PENDING] += 1
+            summary["updated"] += 1
+            _write_ledger(path, ledger)
+            continue
         final = publish_decisions.apply_submission_decision(
             ledger,
             submission_id_value=submission_id,
