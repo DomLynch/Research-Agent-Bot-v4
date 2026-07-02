@@ -13712,6 +13712,96 @@ def test_source_literature_fallback_resumes_stranded_fact_backed_payload(
     assert seen_payload["evidence_bundle"]["direct_source_count"] == 5
 
 
+def test_source_literature_resume_uses_requested_topic_and_public_fingerprint(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    outlets = (
+        "Operations Management Review",
+        "Logistics Systems Journal",
+        "Retail Supply Chain Quarterly",
+        "Service Reliability Research",
+        "Industrial Recovery Studies",
+    )
+    papers = [
+        {
+            "title": f"Supply chain resilience performance receipt {idx}",
+            "doi": f"10.8123/scr-{idx}",
+            "year": 2020 + idx,
+            "journal_name": outlets[idx - 1],
+            "source_fact": {
+                "canonical_phrase": (
+                    f"supply chain resilience changed supply chain performance {idx}"
+                ),
+                "population": f"firm setting {idx}",
+                "intervention": "supply chain resilience",
+                "endpoint": "supply chain performance",
+            },
+        }
+        for idx in range(1, 6)
+    ]
+    candidate, payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="resilience_sales",
+        papers=papers,
+        runs_root=root,
+        date="2026-06-29T03-00-00Z",
+    )
+    markdown_only_fingerprint = hashlib.sha256(payload["markdown"].encode()).hexdigest()
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-29T03-05-00Z",
+        "domain": {"slug": "business_research"},
+        "topic": "resilience_sales",
+        "run_dir": candidate["run_dir"],
+        "fingerprint": markdown_only_fingerprint,
+        "memo_sha256": "legacy-title-sha",
+        "submission_id": "sub-old-title",
+    }])
+    daily._write_json(root / "_daily_ledger" / "old-title.json", {
+        "domain": {"slug": "business_research"},
+        "status": "reviewer_revise",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": "resilience_sales",
+        "candidate": candidate | {"memo_fingerprint": markdown_only_fingerprint},
+    })
+    daily._write_json(root / "_daily_ledger" / "pending-public-topic.json", {
+        "domain": {"slug": "business_research"},
+        "status": "submitted_to_researka",
+        "final_verdict": "pending",
+        "submitted": 1,
+        "published": 0,
+        "submitted_topic": payload["topic"],
+        "candidate": {
+            "topic": payload["topic"],
+            "run_dir": candidate["run_dir"],
+            "memo_fingerprint": candidate["memo_fingerprint"],
+        },
+    })
+
+    resumable = daily._resumable_source_literature_payloads(
+        root, "business_research", 5, set(),
+    )
+    pending_topics = daily._pending_source_literature_topics(
+        root / "_daily_ledger", "business_research",
+    )
+
+    assert list(resumable) == ["resilience_sales"]
+    resumed_candidate, resumed_payload, direct_papers = resumable["resilience_sales"]
+    expected_fingerprint = hashlib.sha256(
+        f"{payload['topic']}\n{payload['title']}\n{payload['markdown']}".encode(),
+    ).hexdigest()
+    assert payload["topic"] == "supply chain resilience"
+    assert payload["requested_topic"] == "resilience_sales"
+    assert resumed_payload["requested_topic"] == "resilience_sales"
+    assert resumed_candidate["topic"] == "resilience_sales"
+    assert resumed_candidate["memo_fingerprint"] == expected_fingerprint
+    assert resumed_candidate["memo_fingerprint"] != markdown_only_fingerprint
+    assert len(direct_papers) == 5
+    assert "resilience_sales" in pending_topics
+    assert "supply chain resilience" in pending_topics
+
+
 def test_source_literature_fallback_skips_pending_priority_family(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

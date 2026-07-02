@@ -2311,6 +2311,42 @@ def _source_literature_topic_from_run(run_ref: Any) -> str:
     return name.split("-source-literature-", 1)[0] if "-source-literature-" in name else ""
 
 
+def _source_literature_payload_requested_topic(payload: Json) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    metadata = payload.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+    for value in (payload.get("requested_topic"), metadata.get("requested_topic")):
+        topic = str(value or "").strip()
+        if topic:
+            return topic
+    return ""
+
+
+def _source_literature_payload_surface_fingerprint(payload: Json, markdown: str) -> str:
+    if not isinstance(payload, dict):
+        return hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+    topic = str(payload.get("topic") or "").strip()
+    title = str(payload.get("title") or payload.get("human_title") or "").strip()
+    if topic or title:
+        return hashlib.sha256(f"{topic}\n{title}\n{markdown}".encode()).hexdigest()
+    return hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+
+
+def _source_literature_candidate_topic(runs_root: Path, candidate: Json) -> str:
+    run_ref = candidate.get("run_dir") if isinstance(candidate, dict) else ""
+    run_topic = _source_literature_topic_from_run(run_ref)
+    if not run_topic:
+        return ""
+    payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
+    return (
+        _source_literature_payload_requested_topic(payload)
+        or str(candidate.get("topic") or "").strip()
+        or run_topic
+    )
+
+
 def _resumable_source_literature_payloads(
     runs_root: Path, domain: str | None, min_sources: int, blocked_topics: set[str],
     *, limit: int = 3,
@@ -2318,12 +2354,11 @@ def _resumable_source_literature_payloads(
     out: dict[str, tuple[Json, Json, list[Json]]] = {}
     profile = load_domain_profile(domain)
     for run_dir in sorted(runs_root.glob("*-source-literature-*"), reverse=True):
-        topic = _source_literature_topic_from_run(run_dir)
+        run_topic = _source_literature_topic_from_run(run_dir)
+        payload = _json(run_dir / "source_literature_payload.json", {})
+        topic = _source_literature_payload_requested_topic(payload) or run_topic
         if not topic or topic in out or _family_blocked_topic(topic, blocked_topics):
             continue
-        if _source_literature_submission_count(runs_root, domain, topic):
-            continue
-        payload = _json(run_dir / "source_literature_payload.json", {})
         evidence = payload.get("evidence_bundle") if isinstance(payload, dict) else {}
         payload_domain = (
             domain_slug(payload.get("domain"))
@@ -2353,9 +2388,18 @@ def _resumable_source_literature_payloads(
         candidate = {
             "topic": topic,
             "run_dir": str(run_dir.relative_to(runs_root)),
-            "memo_fingerprint": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+            "memo_fingerprint": _source_literature_payload_surface_fingerprint(
+                payload, markdown,
+            ),
             "domain": profile.as_metadata(),
         }
+        if _same_memo_seen(
+            runs_root / "_daily_ledger" / "_submitted_fingerprints.json",
+            str(candidate.get("memo_fingerprint") or ""),
+            _memo_sha256(candidate, runs_root),
+            domain,
+        ):
+            continue
         out[topic] = (candidate, payload, direct_papers)
         if len(out) >= limit:
             break
@@ -2383,7 +2427,7 @@ def _previous_source_literature_payload_papers(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2437,7 +2481,7 @@ def _source_literature_submission_count(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic == topic and int(ledger.get("submitted") or 0):
             count += 1
     return count
@@ -2461,7 +2505,7 @@ def _source_literature_clean_terminal_submission_count(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         decision = ledger.get("researka_decision")
         if (
             row_topic == topic
@@ -2494,7 +2538,7 @@ def _source_literature_parent_link_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         saw_submitted_source_literature = True
@@ -2552,7 +2596,7 @@ def _source_literature_renderer_feedback_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2591,7 +2635,7 @@ def _source_literature_title_ownership_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2623,7 +2667,7 @@ def _source_literature_field_ownership_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2658,7 +2702,7 @@ def _source_literature_terminal_resubmit_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2693,7 +2737,7 @@ def _source_literature_publish_framing_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2734,7 +2778,7 @@ def _source_literature_writer_framing_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -2798,7 +2842,7 @@ def _source_literature_source_scope_repair_needed(
         run_ref = candidate.get("run_dir")
         if not _source_literature_topic_from_run(run_ref):
             continue
-        row_topic = str(candidate.get("topic") or "") or _source_literature_topic_from_run(run_ref)
+        row_topic = _source_literature_candidate_topic(runs_root, candidate)
         if row_topic != topic:
             continue
         payload = _json(_run_path(runs_root, run_ref) / "source_literature_payload.json", {})
@@ -3009,7 +3053,10 @@ def _source_literature_attempt_budget(
         ):
             continue
         candidate = ledger.get("candidate")
-        candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
+        candidate_topic = (
+            _source_literature_candidate_topic(runs_root, candidate)
+            if isinstance(candidate, dict) else ""
+        )
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
@@ -3257,7 +3304,13 @@ def _pending_source_literature_topics(
         run_topic = _source_literature_topic_from_run(candidate.get("run_dir"))
         if not run_topic:
             continue
-        for value in (ledger.get("submitted_topic"), candidate.get("topic"), run_topic):
+        requested_topic = _source_literature_candidate_topic(ledger_dir.parent, candidate)
+        for value in (
+            requested_topic,
+            ledger.get("submitted_topic"),
+            candidate.get("topic"),
+            run_topic,
+        ):
             topic = str(value or "").strip()
             if topic:
                 topics.add(topic)
