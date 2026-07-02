@@ -1112,6 +1112,12 @@ def _uniform_favorable_cross_pico(papers: list[Json], min_sources: int) -> bool:
 
 def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -> str:
     direction = _paper_effect_direction(paper, topic)
+    if (
+        _non_biomedical(profile_slug)
+        and direction == "null/non-convergent"
+        and _non_bio_directional_with_subdimension_caveat(paper)
+    ):
+        return "directional association"
     if _non_biomedical(profile_slug):
         fact = paper.get("source_fact")
         fact = fact if isinstance(fact, dict) else {}
@@ -1126,12 +1132,6 @@ def _paper_evidence_role(paper: Json, topic: str = "", profile_slug: str = "") -
             return "antecedent/support"
         if "context" in exposure or "modeling" in exposure or "modelling" in exposure:
             return "descriptive/modeling"
-    if (
-        _non_biomedical(profile_slug)
-        and direction == "null/non-convergent"
-        and _non_bio_directional_with_subdimension_caveat(paper)
-    ):
-        return "directional association"
     if _non_biomedical(profile_slug) and direction == "other/mixed":
         fact = paper.get("source_fact")
         fact = fact if isinstance(fact, dict) else {}

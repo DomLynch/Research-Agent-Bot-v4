@@ -305,7 +305,32 @@ def _fullraw_backoff_path(runs_root: Path) -> Path:
 
 
 def _fullraw_backoff_key(topic: str) -> str:
-    return " ".join(str(topic or "").replace("_", " ").split()).casefold()
+    tokens = [
+        token for token in str(topic or "").replace("_", " ").casefold().split()
+        if token
+    ]
+    while len(tokens) > 1 and tokens[-1] in _BUSINESS_REPLACEABLE_OUTCOME_TOKENS:
+        tokens.pop()
+    return " ".join(tokens)
+
+
+def _fullraw_backoff_ttl_seconds(event: dict[str, Any]) -> float:
+    ttl = _business_fullraw_backoff_seconds()
+    status = str(event.get("status") or event.get("previous_status") or "")
+    async_status = str(event.get("async_status") or "")
+    if (
+        async_status in {"queued", "running"}
+        or event.get("partial_shard_search") is True
+        or status in {
+            "async_queued", "async_running", "in_progress_cache_hit",
+            "in_progress_poll_due", "incomplete_receipt",
+        }
+    ):
+        with suppress(ValueError):
+            ttl = max(ttl, float(_business_fullraw_foreground_seconds()))
+    elif _fullraw_queue_full(event):
+        ttl = max(ttl, _business_fullraw_queue_retry_seconds())
+    return ttl
 
 
 def _fullraw_backoff(runs_root: Path | None, topic: str) -> dict[str, Any] | None:
@@ -326,7 +351,11 @@ def _fullraw_backoff(runs_root: Path | None, topic: str) -> dict[str, Any] | Non
         age = time.time() - float(data.get("ts") or 0.0)
     except (TypeError, ValueError):
         return None
-    ttl = _business_fullraw_backoff_seconds()
+    ttl = _fullraw_backoff_ttl_seconds(data)
+    raw_ttl = data.get("backoff_seconds")
+    if raw_ttl is not None:
+        with suppress(TypeError, ValueError):
+            ttl = float(raw_ttl)
     if ttl <= 0 or age > ttl:
         return None
     return {
@@ -353,6 +382,9 @@ def _record_fullraw_backoff(runs_root: Path | None, topic: str, event: dict[str,
         "ts": time.time(),
         "status": event.get("status"),
         "async_status": event.get("async_status"),
+        "backoff_seconds": _fullraw_backoff_ttl_seconds(event),
+        "queued_count": event.get("queued_count"),
+        "max_queue": event.get("max_queue"),
         "shards_searched": event.get("shards_searched"),
         "partial_shard_search": event.get("partial_shard_search"),
     }

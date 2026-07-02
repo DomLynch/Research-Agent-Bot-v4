@@ -17126,8 +17126,8 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     markdown = payload["markdown"]
     assert payload["title"] == (
-        "supply chain resilience antecedents: antecedent-mediated supply chain "
-        "performance map with firm performance caveat"
+        "supply chain resilience: direction-bearing supply chain performance "
+        "signal with firm performance caveat"
     )
     assert payload["human_title"] == payload["title"]
     assert payload["metadata"]["topic_label"] == "supply chain resilience"
@@ -17164,7 +17164,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         "chemical firms",
         "chemical firms",
         "supply chain performance",
-        "antecedent/support",
+        "directional association",
     ) in source_contexts
     assert (
         "manufacturing firms",
@@ -17204,9 +17204,10 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
     ) == "flexibility, collaboration, and agility antecedents"
     assert "5-source map:" not in payload["title"]
     assert "5-source scoping map" not in payload["abstract"]
-    assert "source-level context map" in payload["abstract"]
-    assert "selected receipts do not establish one pooled effect" in payload["abstract"]
-    assert "policy-prescriptive, or market-generalized claim" in payload["abstract"]
+    assert "Source-scope map" in payload["abstract"]
+    assert "not a comparator claim" in payload["abstract"]
+    assert "broad market signal" in payload["abstract"]
+    assert "policy-prescriptive, market-generalized" in payload["markdown"]
     assert "not a general null" not in payload["markdown"]
     assert "null/mixed metric-scope caveat" in payload["markdown"]
     assert (
@@ -17214,43 +17215,42 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         in payload["markdown"]
     )
     assert (
-        "Construct alignment: the antecedent/support rows are source-overlapping "
-        "for supply chain performance, but they do not by themselves test "
-        "supply chain resilience as a direct exposure."
+        "Integrated reading: the directional and caveat receipts are not matched "
+        "on setting, design, and metric"
     ) in payload["markdown"]
     assert all(source.get("excerpt") for source in payload["source_bundle"])
     assert "unmatched metric-scope map" not in payload["title"]
     assert "source-scope boundary note" not in payload["title"]
     assert (
-        "Evidence role summary: direction-bearing receipts: 0; "
+        "Evidence role summary: direction-bearing receipts: 1; "
         "null/mixed metric-scope caveat receipts: 1; context/antecedent/model "
-        "receipts: 4 excluded from effect support."
+        "receipts: 3 excluded from effect support."
     ) in markdown
-    assert "directional association: 1 receipt(s)" not in markdown
+    assert "directional association: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
     assert "fallback" not in markdown.lower()
-    assert "Bounded signal:" in markdown
+    assert "Source-scope map:" in markdown
     assert "Metric imbalance disclosure:" not in markdown
     assert "strong null claim" not in markdown
-    assert "antecedent-mediated supply chain performance map" in payload["title"]
+    assert "direction-bearing supply chain performance signal" in payload["title"]
     assert "firm performance caveat" in payload["title"]
-    assert "firm performance is null or non-convergent" not in markdown
-    assert "direction-bearing receipts: 0" in markdown
-    assert "context/antecedent/model receipts: 4 excluded from effect support" in markdown
+    assert "firm performance in firms as null or non-convergent" in markdown
+    assert "direction-bearing receipts: 1" in markdown
+    assert "context/antecedent/model receipts: 3 excluded from effect support" in markdown
     assert " k=" not in markdown
     assert "It excludes duplicate reports, metadata-only title matches" in markdown
-    assert "The antecedent-mediated map would weaken" in markdown
+    assert "the directional-association supply chain performance receipt would weaken" in markdown
     assert "supply chain performance" in markdown
     assert "firm performance" in markdown
-    assert "matched supply chain performance receipts show no link" in markdown
-    assert "Evidence weight: one effect-bearing receipt supports supply chain performance" not in markdown
+    assert "matched industry/setting, comparator/reference, and metric replication" in markdown
+    assert "Evidence weight: one effect-bearing receipt supports supply chain performance" in markdown
     assert "Population/settings are separated as receipt context" in markdown
     assert "automotive firms" in markdown
     assert "chemical firms" in markdown
     assert "manufacturing firms" in markdown
-    assert "Effect-support accounting: 4 of 5 receipt(s) is context/modeling-only" in markdown
+    assert "Effect-support accounting: 3 of 5 receipt(s) is context/modeling-only" in markdown
     assert "Routing domain" not in markdown
-    assert "antecedent/support: 2 receipt(s)" in markdown
+    assert "antecedent/support: 1 receipt(s)" in markdown
     assert "descriptive/modeling: 2 receipt(s)" in markdown
     assert "## Evidence matrix" in markdown
     assert "## Evidence role definitions" in markdown
@@ -17276,15 +17276,15 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
         < context_section_start
     )
     assert (
+        markdown.index("| chain-level | The effect of supply chain resilience on", effect_section_start)
+        < context_section_start
+    )
+    assert (
         markdown.index("| modeling-context | Supply chain resilience and performance of manufacturing firms", context_section_start)
         > context_section_start
     )
     assert (
         markdown.index("| chain-level | Factors Affecting the Supply Chain Resilience", context_section_start)
-        > context_section_start
-    )
-    assert (
-        markdown.index("| chain-level | The effect of supply chain resilience on", context_section_start)
         > context_section_start
     )
     assert "antecedent/support | firms | supply chain performance" in markdown
@@ -17323,7 +17323,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert repaired_payload["metadata"]["topic"] == "supply_chain_margin"
     assert repaired_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert repaired_payload["title"].startswith("supply chain resilience antecedents:")
+    assert repaired_payload["title"].startswith("supply chain resilience: direction-bearing")
     assert "supply chain margin" not in repaired_payload["title"].lower()
     assert "supply chain margin" not in repaired_payload["abstract"].lower()
     assert "supply chain margin" not in repaired_payload["markdown"].lower()
@@ -17338,7 +17338,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert productivity_payload["metadata"]["topic"] == "supply_chain_resilience_productivity"
     assert productivity_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert productivity_payload["title"].startswith("supply chain resilience antecedents:")
+    assert productivity_payload["title"].startswith("supply chain resilience: direction-bearing")
     assert "productivity" not in productivity_payload["title"].lower()
     assert "productivity" not in productivity_payload["abstract"].lower()
     assert "productivity" not in productivity_payload["markdown"].lower()
@@ -17360,7 +17360,7 @@ def test_source_literature_payload_maps_business_repair_directional_contrast(
 
     assert sales_payload["metadata"]["topic"] == "resilience_sales"
     assert sales_payload["metadata"]["topic_label"] == "supply chain resilience"
-    assert sales_payload["title"].startswith("supply chain resilience antecedents:")
+    assert sales_payload["title"].startswith("supply chain resilience: direction-bearing")
     assert "resilience sales" not in sales_payload["title"].lower()
     assert "resilience sales" not in sales_payload["abstract"].lower()
     assert "resilience sales" not in sales_payload["markdown"].lower()
