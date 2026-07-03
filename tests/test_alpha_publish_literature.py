@@ -21,6 +21,22 @@ class _Response:
         return json.dumps(self._payload).encode("utf-8")
 
 
+def _paper(
+    doi: str, title: str, phrase: str, population: str, intervention: str, endpoint: str,
+) -> dict[str, Any]:
+    return {
+        "doi": doi,
+        "title": title,
+        "source_fact": {
+            "canonical_phrase": phrase,
+            "population": population,
+            "intervention": intervention,
+            "endpoint": endpoint,
+            "source_tier": "fullraw_abstract",
+        },
+    }
+
+
 def test_fetch_papers_enriches_fullraw_metadata_with_adjacent_fact_rows(
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -457,6 +473,64 @@ def test_select_boundary_papers_prefers_distinct_source_outlets() -> None:
     assert literature.source_outlet_count(selected) == 5
     assert "10.8206/dtf-6" in {paper["doi"] for paper in selected}
     assert "10.8202/dtf-2" not in {paper["doi"] for paper in selected}
+
+
+def test_biomedical_selection_prefers_single_pico_cluster() -> None:
+    topic = "metformin"
+    distractors = [
+        _paper(f"10.8300/met-distractor-{idx}", title, phrase, population, "metformin", endpoint)
+        for idx, (title, population, endpoint, phrase) in enumerate((
+            (
+                "Metformin and cancer survival",
+                "adults with cancer",
+                "cancer survival",
+                "metformin was associated with longer cancer survival",
+            ),
+            (
+                "Metformin and inflammatory biomarkers",
+                "adults with inflammatory disease",
+                "inflammatory biomarkers",
+                "metformin reduced inflammatory biomarkers",
+            ),
+        ), start=1)
+    ]
+    matched = [
+        _paper(
+            f"10.8300/met-glycemic-{idx}",
+            f"Metformin glycemic-control trial {idx}",
+            "metformin reduced fasting glucose",
+            "adults with type 2 diabetes",
+            "metformin",
+            "fasting glucose",
+        )
+        for idx in range(5)
+    ]
+
+    selected = literature.select_boundary_papers(
+        topic,
+        [*distractors, *matched],
+        5,
+        profile_slug="longevity_research",
+    )
+
+    assert {paper["doi"] for paper in selected} == {paper["doi"] for paper in matched}
+
+
+def test_boundary_quality_blocks_biomedical_context_only_bundle() -> None:
+    papers = [
+        _paper("10.8400/epi-senolytic", "Senolytic treatment and epigenetic age acceleration", "significant increases in epigenetic age acceleration", "19 participants in a Phase I pilot", "senolytic treatment", "epigenetic clocks"),
+        _paper("10.8400/epi-tissue", "Cross-tissue comparison of epigenetic age", "blood-derived clocks differed from oral-based tissues", "83 people aged 9-70", "cross-tissue comparison", "epigenetic clocks"),
+        _paper("10.8400/epi-mammal", "Universal pan-mammalian epigenetic age predictor", "predictive accuracy exceeded r 0.96", "185 mammalian species", "pan-mammalian clock model", "epigenetic clocks"),
+        _paper("10.8400/epi-covid", "Severe infection and epigenetic age", "GrimAge beta was -0.24 after severe infection", "COVID-19 patients", "severe infection", "epigenetic clocks"),
+        _paper("10.8400/epi-pregnancy", "Pregnancy and epigenetic age acceleration", "pregnancy was linked to faster epigenetic aging", "pregnancy cohort", "pregnancy", "epigenetic clocks"),
+    ]
+
+    assert literature.boundary_quality(
+        "epigenetic_clocks",
+        papers,
+        5,
+        profile_slug="longevity_research",
+    ) == (False, "context_only_source_literature_bundle")
 
 
 def test_non_bio_promote_receipt_counts_directional() -> None:

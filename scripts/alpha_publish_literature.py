@@ -420,6 +420,42 @@ def _paper_outcome_family_key(topic: str, paper: Json) -> str:
     return title_key(label)
 
 
+def _paper_pico_frame_key(topic: str, paper: Json) -> str:
+    fact = paper.get("source_fact")
+    fact = fact if isinstance(fact, dict) else {}
+    population = context_family(fact.get("population") or paper.get("title"))
+    exposure = title_key(fact.get("intervention") or "")
+    outcome = title_key(
+        fact.get("endpoint") or fact.get("metric") or fact.get("canonical_phrase") or "",
+    )
+    if not exposure or not outcome:
+        return ""
+    if population == "other source context":
+        population = ""
+    return "|".join(part for part in (population, exposure, outcome) if part)
+
+
+def _coherent_pico_cluster(
+    topic: str, papers: list[Json], min_sources: int, profile_slug: str,
+) -> list[Json]:
+    if not profile_slug or _non_biomedical(profile_slug):
+        return []
+    buckets: dict[str, list[Json]] = {}
+    for paper in papers:
+        key = _paper_pico_frame_key(topic, paper)
+        if key:
+            buckets.setdefault(key, []).append(paper)
+    clusters = [rows for rows in buckets.values() if len(rows) >= min_sources]
+    return max(clusters, key=len) if clusters else []
+
+
+def _pico_frame_count(topic: str, papers: list[Json]) -> int:
+    return len({
+        key for paper in papers
+        if (key := _paper_pico_frame_key(topic, paper))
+    })
+
+
 def _source_diverse_order(topic: str, papers: list[Json]) -> list[Json]:
     picked: list[Json] = []
     duplicate_outcomes: list[Json] = []
@@ -460,6 +496,9 @@ _DIRECTIONAL_SOURCE_LIT_ROLES = frozenset({
     "directional estimate", "directionally favorable",
 })
 _BOUNDARY_SOURCE_LIT_ROLES = frozenset({"null/mixed", "descriptive/modeling"})
+_BIOMED_EFFECT_DIRECTIONS = frozenset({
+    "comparator/not favorable", "directionally favorable", "null/non-convergent",
+})
 
 
 def _directional_receipt_count(papers: list[Json], topic: str, profile_slug: str) -> int:
@@ -585,6 +624,10 @@ def select_boundary_papers(
         paper for paper in usable if _paper_has_substantive_source_fact(paper)
     ]
     if len(substantive) >= min_sources:
+        if pico_cluster := _coherent_pico_cluster(
+            topic, substantive, min_sources, profile_slug,
+        ):
+            return _source_lit_selection(topic, pico_cluster, min_sources, profile_slug)
         substantive_buckets: dict[str, list[Json]] = {}
         for paper in substantive:
             substantive_buckets.setdefault(_paper_context_family(paper), []).append(paper)
@@ -598,6 +641,8 @@ def select_boundary_papers(
             )
         return _source_lit_selection(topic, substantive, min_sources, profile_slug)
     buckets: dict[str, list[Json]] = {}
+    if pico_cluster := _coherent_pico_cluster(topic, usable, min_sources, profile_slug):
+        return _source_lit_selection(topic, pico_cluster, min_sources, profile_slug)
     for paper in usable:
         buckets.setdefault(_paper_context_family(paper), []).append(paper)
     coherent = [
@@ -644,6 +689,14 @@ def boundary_quality(
         and all(direction == "non-clinical/predictive" for direction in directions)
     ):
         return False, "predictive_model_only_bundle"
+    if (
+        profile_slug
+        and not _non_biomedical(profile_slug)
+        and directions
+        and not any(direction in _BIOMED_EFFECT_DIRECTIONS for direction in directions)
+        and _pico_frame_count(topic, usable) >= min(3, min_sources)
+    ):
+        return False, "context_only_source_literature_bundle"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
     if _non_biomedical(profile_slug) and not _directional_floor_met(
