@@ -6754,9 +6754,11 @@ def run_cycle(
         ledger["stage"] = "initial_queue_probe"
         ledger["next_action"] = "building_current_publish_queue"
         _write_ledger(ledger_path, ledger)
-        candidate_queue = _with_repairable_candidates(
-            build_initial_probe_queue(), runs_root, profile.slug,
-        )
+        candidate_queue = build_initial_probe_queue()
+        if ledger.get("initial_queue_probe_source") != "cached_domain_queue":
+            candidate_queue = _with_repairable_candidates(
+                candidate_queue, runs_root, profile.slug,
+            )
         source_lit_available = False
         source_lit_probe_attempts: list[Json] = []
         if submit:

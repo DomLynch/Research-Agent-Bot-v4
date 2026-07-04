@@ -826,7 +826,11 @@ def test_refresh_cycle_uses_cached_domain_queue_before_full_build(
     def fail_build_queue(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
         raise AssertionError("initial probe should use cached domain queue")
 
+    def fail_repairable_scan(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("cached initial probe should not scan repairable ledgers")
+
     monkeypatch.setattr(daily, "_build_queue", fail_build_queue)
+    monkeypatch.setattr(daily, "_repairable_candidate_verdicts", fail_repairable_scan)
     monkeypatch.setattr(daily, "_refresh_candidate_batch", lambda *_args, **_kwargs: {
         "ok": False, "note": "bounded test stop",
     })
