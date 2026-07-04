@@ -241,6 +241,12 @@ _ALPHA_REFRESH_FULLRAW_DEFAULTS = {
     "TOPIC_DISCOVERY_FULLRAW_SUPPLY_QUERY_BUDGET_SECONDS": "300",
     "TOPIC_DISCOVERY_FULLRAW_SUPPLY_SWEEP_WAIT_SECONDS": "240",
 }
+_SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS = {
+    "RESEARKA_SOURCE_LITERATURE_FULLRAW_TIMEOUT_SECONDS": "8",
+    "RESEARKA_SOURCE_LITERATURE_FULLRAW_BUDGET_SECONDS": "20",
+    "RESEARKA_SOURCE_LITERATURE_FULLRAW_SWEEP_WAIT_SECONDS": "8",
+    "RESEARKA_SOURCE_LITERATURE_FULLRAW_MAX_VARIANTS": "1",
+}
 # User-facing "3x" repair limit: one initial submit plus three repaired
 # resubmits for the same evidence fingerprint.
 _MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT = 4
@@ -5409,6 +5415,27 @@ def _source_literature_candidate_papers(
     return fetched or papers
 
 
+def _source_literature_preflight_candidate_papers(
+    runs_root: Path, profile_slug: str, topic: str, min_sources: int, fetch_limit: int,
+) -> list[Json]:
+    old = {
+        key: os.environ.get(key)
+        for key in _SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS
+    }
+    try:
+        for key, value in _SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS.items():
+            os.environ.setdefault(key, value)
+        return _source_literature_candidate_papers(
+            runs_root, profile_slug, topic, min_sources, fetch_limit,
+        )
+    finally:
+        for key, old_value in old.items():
+            if old_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old_value
+
+
 def _source_literature_topic_candidate(
     runs_root: Path, profile_slug: str, min_sources: int, blocked_topics: set[str] | None = None,
     *, soft_broad_blocked_topics: set[str] | None = None,
@@ -6702,7 +6729,7 @@ def run_cycle(
         if submit:
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: (
-                    _source_literature_candidate_papers(
+                    _source_literature_preflight_candidate_papers(
                         runs_root, profile.slug, topic, min_submit_sources, limit,
                     )
                 )

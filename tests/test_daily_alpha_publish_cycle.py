@@ -19070,6 +19070,63 @@ def test_ai_refresh_hands_off_to_source_literature_before_warm_backlog(
     assert ledger["status"] == "published"
 
 
+def test_initial_source_lit_preflight_bounds_fullraw_fetch(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    topic_calls = 0
+    live_flags: list[bool] = []
+    captured_env: list[dict[str, str | None]] = []
+    for key in daily._SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS:
+        monkeypatch.delenv(key, raising=False)
+
+    def topics(*_args: Any, **_kwargs: Any) -> list[str]:
+        nonlocal topic_calls
+        topic_calls += 1
+        return ["llm_evaluation"] if topic_calls == 1 else []
+
+    def papers(
+        *_args: Any,
+        allow_live_fetch: bool = True,
+        **_kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        live_flags.append(allow_live_fetch)
+        captured_env.append({
+            key: os.environ.get(key)
+            for key in daily._SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS
+        })
+        return []
+
+    monkeypatch.setattr(daily, "_source_literature_topic_candidates", topics)
+    monkeypatch.setattr(daily, "_source_literature_candidate_papers", papers)
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", lambda *_args, **_kwargs: {
+        "ok": False,
+        "note": "bounded test stop",
+        "warm_backlog": True,
+    })
+
+    daily.run_cycle(
+        runs_root=root,
+        date="2026-07-04T21-30-00Z",
+        domain="ai_research",
+        queue=None,
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert live_flags == [True]
+    assert captured_env == [daily._SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS]
+    assert {
+        key: os.environ.get(key)
+        for key in daily._SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS
+    } == {key: None for key in daily._SOURCE_LIT_PREFLIGHT_FULLRAW_DEFAULTS}
+
+
 def test_initial_probe_refreshes_when_ready_row_recomputes_unactionable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
