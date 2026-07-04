@@ -5206,32 +5206,15 @@ def _source_literature_topic_candidates(
         data = _json(path, {})
         if not isinstance(data, dict):
             continue
-        for bucket in ("not_ready", "curation_needed", "agent_repair_needed"):
-            rows = data.get(bucket)
-            if not isinstance(rows, list):
-                continue
-            for row in rows:
-                if not isinstance(row, dict) or not _same_domain(_row_domain(row), profile_slug):
-                    continue
-                topic = str(row.get("topic") or "").strip()
-                if not topic or topic in seen or _source_literature_family_blocked_topic(
-                    topic, blocked,
-                    soft_broad_blocked_topics=soft_broad_blocked_topics,
-                ):
-                    continue
-                topic_key = _canonical_family_key(topic).removeprefix("topic:")
-                topic_tokens = {
-                    token.rstrip("s") for token in topic_key.split("_")
-                    if len(token.rstrip("s")) >= 3
-                }
-                if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
-                    continue
-                if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
-                    continue
-                topics.append(topic)
-                seen.add(topic)
-                if len(topics) >= limit:
-                    return topics[:limit]
+        queue_topics = _source_literature_queue_topics(
+            data, profile_slug, blocked, limit=limit - len(topics),
+            seen_topics=seen,
+            soft_broad_blocked_topics=soft_broad_blocked_topics,
+        )
+        topics.extend(queue_topics)
+        seen.update(queue_topics)
+        if len(topics) >= limit:
+            return topics[:limit]
     return topics[:limit]
 
 
@@ -5466,6 +5449,47 @@ def _source_literature_topic_candidate(
         soft_broad_blocked_topics=soft_broad_blocked_topics,
     )
     return topics[0] if topics else None
+
+
+def _source_literature_queue_topics(
+    queue: Json,
+    profile_slug: str,
+    blocked_topics: set[str],
+    *,
+    limit: int,
+    seen_topics: set[str] | None = None,
+    soft_broad_blocked_topics: set[str] | None = None,
+) -> list[str]:
+    seed_scope = _seed_scope_tokens(_domain_seed_prefixes(profile_slug))
+    topics: list[str] = []
+    seen: set[str] = set(seen_topics or set())
+    for bucket in ("not_ready", "curation_needed", "agent_repair_needed"):
+        rows = queue.get(bucket)
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict) or not _same_domain(_row_domain(row), profile_slug):
+                continue
+            topic = str(row.get("topic") or "").strip()
+            if not topic or topic in seen or _source_literature_family_blocked_topic(
+                topic, blocked_topics,
+                soft_broad_blocked_topics=soft_broad_blocked_topics,
+            ):
+                continue
+            topic_key = _canonical_family_key(topic).removeprefix("topic:")
+            topic_tokens = {
+                token.rstrip("s") for token in topic_key.split("_")
+                if len(token.rstrip("s")) >= 3
+            }
+            if "anti" in topic_tokens and seed_scope and not ((topic_tokens - {"anti"}) & seed_scope):
+                continue
+            if topic_tokens and not (topic_tokens - _DISCOVERY_PARENT_GENERIC_TOKENS):
+                continue
+            topics.append(topic)
+            seen.add(topic)
+            if len(topics) >= limit:
+                return topics[:limit]
+    return topics[:limit]
 
 
 def _source_literature_fetch_topics(topic: str) -> list[str]:
@@ -6772,17 +6796,27 @@ def run_cycle(
             )
             if cached_initial_probe:
                 ledger["initial_source_lit_repair_scan"] = "skipped_cached_domain_queue"
+                ledger["initial_source_lit_topic_source"] = "cached_domain_queue"
             source_lit_probe_topics = [] if cached_initial_probe else list(
                 _priority_source_literature_repair_decisions(
                     runs_root, profile.slug, limit=1,
                 ),
             )
-            for topic in _source_literature_topic_candidates(
-                runs_root, profile.slug, min_submit_sources,
-                source_literature_blocked_topics,
-                limit=1,
-                soft_broad_blocked_topics=source_literature_soft_blocked_topics,
-            ):
+            queue_topics = (
+                _source_literature_queue_topics(
+                    candidate_queue, profile.slug, source_literature_blocked_topics,
+                    limit=1,
+                    soft_broad_blocked_topics=source_literature_soft_blocked_topics,
+                )
+                if cached_initial_probe else
+                _source_literature_topic_candidates(
+                    runs_root, profile.slug, min_submit_sources,
+                    source_literature_blocked_topics,
+                    limit=1,
+                    soft_broad_blocked_topics=source_literature_soft_blocked_topics,
+                )
+            )
+            for topic in queue_topics:
                 if topic not in source_lit_probe_topics:
                     source_lit_probe_topics.append(topic)
             if not cached_initial_probe:
