@@ -6783,6 +6783,9 @@ def run_cycle(
             )
         source_lit_available = False
         source_lit_probe_attempts: list[Json] = []
+        cached_initial_probe = (
+            ledger.get("initial_queue_probe_source") == "cached_domain_queue"
+        )
         if submit:
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: (
@@ -6790,9 +6793,6 @@ def run_cycle(
                         runs_root, profile.slug, topic, min_submit_sources, limit,
                     )
                 )
-            )
-            cached_initial_probe = (
-                ledger.get("initial_queue_probe_source") == "cached_domain_queue"
             )
             if cached_initial_probe:
                 ledger["initial_source_lit_repair_scan"] = "skipped_cached_domain_queue"
@@ -6852,47 +6852,58 @@ def run_cycle(
         ledger["stage"] = "initial_queue_probe_complete"
         ledger["preflight_queue_counts"] = publish_status.queue_counts(candidate_queue)
         _write_ledger(ledger_path, ledger)
-        preflight_candidate, preflight_considered = select_candidate(
-            candidate_queue,
-            runs_root=runs_root,
-            submitted_path=submitted_path,
-            allow_tier2=allow_tier2,
-            min_source_count=min_submit_sources,
-            min_direct_source_count=min_direct_submit_sources,
-            blocked_fingerprints=blocked_fingerprints,
-            blocked_topics=blocked_topics,
-            accepted_shape_profiles=accepted_shape_profiles,
-            retryable_fingerprints=session_retryable,
-            retry_decision_overrides=session_retry_decisions,
-            domain=profile.slug,
+        cached_no_ready = (
+            cached_initial_probe
+            and not candidate_queue.get("ready_to_publish")
+            and not source_lit_available
         )
-        preflight_counts: dict[str, int] = {}
-        for row in preflight_considered:
-            if isinstance(row, dict):
-                status = str(row.get("status") or "unknown")
-                preflight_counts[status] = preflight_counts.get(status, 0) + 1
-        ledger["preflight_considered_counts"] = preflight_counts
-        cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
-            r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
-        ]
-        seen_preflight = _seen_submission_fingerprints_for_domain(
-            submitted_path, profile.slug,
-        )
-        cluster_available = any(
-            memo_fingerprint(candidate) not in blocked_fingerprints
-            and memo_fingerprint(candidate) not in seen_preflight
-            and not any(
-                _family_blocked_topic(value, blocked_topics)
-                for value in [
-                    *_family_values(candidate),
-                    str(candidate.get("_parent_topic") or ""),
-                ]
-            )
-            for candidate in _claim_cluster_candidates(
-                cluster_rows, runs_root,
+        preflight_candidate = None
+        cluster_available = False
+        if cached_no_ready:
+            ledger["initial_selection_scan"] = "skipped_cached_no_ready"
+            ledger["preflight_considered_counts"] = {}
+        else:
+            preflight_candidate, preflight_considered = select_candidate(
+                candidate_queue,
+                runs_root=runs_root,
+                submitted_path=submitted_path,
+                allow_tier2=allow_tier2,
+                min_source_count=min_submit_sources,
                 min_direct_source_count=min_direct_submit_sources,
+                blocked_fingerprints=blocked_fingerprints,
+                blocked_topics=blocked_topics,
+                accepted_shape_profiles=accepted_shape_profiles,
+                retryable_fingerprints=session_retryable,
+                retry_decision_overrides=session_retry_decisions,
+                domain=profile.slug,
             )
-        )
+            preflight_counts: dict[str, int] = {}
+            for row in preflight_considered:
+                if isinstance(row, dict):
+                    status = str(row.get("status") or "unknown")
+                    preflight_counts[status] = preflight_counts.get(status, 0) + 1
+            ledger["preflight_considered_counts"] = preflight_counts
+            cluster_rows = _rows(candidate_queue, allow_tier2=True) + [
+                r for r in candidate_queue.get("curation_needed") or [] if isinstance(r, dict)
+            ]
+            seen_preflight = _seen_submission_fingerprints_for_domain(
+                submitted_path, profile.slug,
+            )
+            cluster_available = any(
+                memo_fingerprint(candidate) not in blocked_fingerprints
+                and memo_fingerprint(candidate) not in seen_preflight
+                and not any(
+                    _family_blocked_topic(value, blocked_topics)
+                    for value in [
+                        *_family_values(candidate),
+                        str(candidate.get("_parent_topic") or ""),
+                    ]
+                )
+                for candidate in _claim_cluster_candidates(
+                    cluster_rows, runs_root,
+                    min_direct_source_count=min_direct_submit_sources,
+                )
+            )
         if preflight_candidate is not None or cluster_available:
             preflight_queue = candidate_queue
             skip_refresh_note = "skipped_initial_queue_probe"

@@ -854,6 +854,7 @@ def test_refresh_cycle_uses_cached_domain_queue_before_full_build(
     assert ledger["initial_queue_probe_source"] == "cached_domain_queue"
     assert ledger["initial_source_lit_repair_scan"] == "skipped_cached_domain_queue"
     assert ledger["initial_source_lit_topic_source"] == "cached_domain_queue"
+    assert ledger["initial_selection_scan"] == "skipped_cached_no_ready"
     assert ledger["status"] == "no_fresh_candidate"
 
 
