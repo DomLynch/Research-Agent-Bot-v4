@@ -7058,6 +7058,22 @@ def run_cycle(
                 priority_refresh_topics = fresh_parent_topics
                 force_refresh = True
                 continue
+            if (
+                refresh_candidates
+                and _source_literature_topic_candidates(
+                    runs_root,
+                    profile.slug,
+                    min_submit_sources,
+                    source_literature_blocked_topics,
+                    limit=1,
+                    soft_broad_blocked_topics=source_literature_soft_blocked_topics,
+                )
+            ):
+                ledger["refresh_early_exit"] = {
+                    "batch": batch,
+                    "reason": "source_literature_candidate_available_after_refresh",
+                }
+                break
             if refresh_candidates and refresh.get("skipped_in_cooldown"):
                 force_refresh = True
             elif refresh_candidates and refresh.get("warm_backlog"):

@@ -18999,6 +18999,77 @@ def test_source_literature_fallback_runs_for_ai_domain(
     assert ledger["source_literature_fallback"]["status"] == "selected"
 
 
+def test_ai_refresh_hands_off_to_source_literature_before_warm_backlog(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    labels = ("Alpha", "Beta", "Gamma", "Delta", "Epsilon")
+    papers = [
+        {
+            "title": f"{labels[idx]} LLM evaluation benchmark paper",
+            "doi": f"10.1234/ai-refresh-{idx}",
+            "journal_name": f"{labels[idx]} AI Eval Journal",
+            "source_fact": {
+                "canonical_phrase": (
+                    f"llm evaluation benchmark improves model assessment outcome {idx}"
+                ),
+                "population": "model evaluations",
+                "intervention": "llm evaluation benchmark",
+                "endpoint": f"model assessment outcome {idx}",
+            },
+        }
+        for idx in range(5)
+    ]
+    refresh_warm_flags: list[bool] = []
+
+    def refresh(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        refresh_warm_flags.append(bool(kwargs.get("warm_backlog")))
+        daily._write_json(root / "_publish_queue.ai_research.json", {
+            "agent_repair_needed": [{
+                "topic": "llm_evaluation",
+                "domain": {"slug": "ai_research"},
+                "decision": "agent_repair_needed",
+            }],
+            "curation_needed": [],
+            "not_ready": [],
+            "ready_to_publish": [],
+        })
+        return {"ok": True, "top": 5, "ran_topics": []}
+
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", refresh)
+    submitted: list[str] = []
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-04T21-30-00Z",
+        domain="ai_research",
+        queue=_queue(),
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        source_paper_fetcher=lambda _topic, _limit: papers,
+        submitter=lambda payload: submitted.append(str(payload.get("topic"))) or {
+            "ok": True, "status": 200, "response": {"submission": {"id": "sub-ai"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/ai-source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>AI</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert refresh_warm_flags == [False]
+    assert submitted == ["llm_evaluation"]
+    assert ledger["refresh_early_exit"]["reason"] == (
+        "source_literature_candidate_available_after_refresh"
+    )
+    assert ledger["status"] == "published"
+
+
 def test_initial_probe_refreshes_when_ready_row_recomputes_unactionable(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
