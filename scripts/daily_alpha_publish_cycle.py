@@ -7736,6 +7736,13 @@ def run_cycle(
                             return ledger
                         if final in {_DECISION_REJECTED, _DECISION_REVISE}:
                             researka_decision = ledger.get("researka_decision", {})
+                            if (
+                                bundle_sig
+                                and final == _DECISION_REJECTED
+                                and _hard_duplicate_decision(researka_decision)
+                            ):
+                                source_lit_duplicate_rejected_bundle_sigs.add(bundle_sig)
+                                fallback_attempt["bundle_signature"] = bundle_sig
                             ledger["cycle_attempts"].append({
                                 "topic": literature_topic,
                                 "run_dir": candidate.get("run_dir"),
@@ -7864,6 +7871,16 @@ def run_cycle(
                                             _write_ledger(ledger_path, ledger)
                                             return ledger
                                         if final in {_DECISION_REJECTED, _DECISION_REVISE}:
+                                            researka_decision = ledger.get("researka_decision", {})
+                                            if (
+                                                bundle_sig
+                                                and final == _DECISION_REJECTED
+                                                and _hard_duplicate_decision(researka_decision)
+                                            ):
+                                                source_lit_duplicate_rejected_bundle_sigs.add(
+                                                    bundle_sig,
+                                                )
+                                                fallback_attempt["bundle_signature"] = bundle_sig
                                             ledger["cycle_attempts"].append({
                                                 "topic": literature_topic,
                                                 "run_dir": candidate.get("run_dir"),
@@ -7890,6 +7907,9 @@ def run_cycle(
                                     return ledger
                                 fallback_attempt["status"] = "blocked"
                                 fallback_attempt["reason"] = result["status"]
+                                if bundle_sig and result["status"] == "rejected_duplicate":
+                                    source_lit_duplicate_rejected_bundle_sigs.add(bundle_sig)
+                                    fallback_attempt["bundle_signature"] = bundle_sig
                                 if idx + 1 < len(literature_topics):
                                     continue
                                 return ledger
@@ -7906,6 +7926,9 @@ def run_cycle(
                     return ledger
                 fallback_attempt["status"] = "blocked"
                 fallback_attempt["reason"] = result["status"]
+                if bundle_sig and result["status"] == "rejected_duplicate":
+                    source_lit_duplicate_rejected_bundle_sigs.add(bundle_sig)
+                    fallback_attempt["bundle_signature"] = bundle_sig
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({

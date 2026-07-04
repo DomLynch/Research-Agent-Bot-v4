@@ -12948,6 +12948,90 @@ def test_source_literature_fallback_skips_published_bundle_variant(
     assert ledger["submitted_topic"] == fresh_topic
 
 
+def test_source_literature_fallback_learns_duplicate_bundle_in_run(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    duplicate_a = "supply_chain_margin"
+    duplicate_b = "supply_chain_margin_value"
+    fresh_topic = "platform_strategy_network_effects"
+
+    def papers_for(topic: str, prefix: str) -> list[dict[str, Any]]:
+        labels = ("Alpha", "Beta", "Gamma", "Delta", "Epsilon")
+        return [
+            {
+                "title": f"{labels[idx]} {topic.replace('_', ' ')} source",
+                "doi": f"10.8888/{prefix}-{idx}",
+                "journal_name": f"{labels[idx]} {prefix} Journal",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{topic.replace('_', ' ')} improves bounded outcome {idx}"
+                    ),
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": f"bounded outcome {idx}",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    duplicate_papers = papers_for(duplicate_b, "dup")
+    fresh_papers = papers_for(fresh_topic, "fresh")
+    submitted_topics: list[str] = []
+
+    def fetch(topic: str, _limit: int) -> list[dict[str, Any]]:
+        return fresh_papers if topic == fresh_topic else duplicate_papers
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        topic = str(payload.get("topic") or "")
+        submitted_topics.append(topic)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{topic}"}},
+        }
+
+    def decision_fetcher(submission_id: str) -> dict[str, Any]:
+        if submission_id == f"sub-{duplicate_a}":
+            return {
+                "status": "complete",
+                "decision": "reject",
+                "failure_category": "integrity_duplicate",
+                "failed_checks": [
+                    "Exact-content duplicate of publication pub-1. "
+                    "Resubmission requires substantially new content.",
+                ],
+                "resubmission": {"allowed": True},
+            }
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/fresh-business"},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-04T18-00-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=fetch,
+        source_literature_priority_topics=[duplicate_a, duplicate_b, fresh_topic],
+        submitter=submitter,
+        decision_fetcher=decision_fetcher,
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Fresh</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted_topics == [duplicate_a, fresh_topic]
+    assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
+        "ok", "duplicate_publication_bundle", "ok",
+    ]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == fresh_topic
+
+
 def test_source_literature_fallback_skips_recent_underfilled_attempts_after_duplicate(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
