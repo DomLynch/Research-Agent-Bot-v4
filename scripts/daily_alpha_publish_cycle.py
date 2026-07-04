@@ -1080,7 +1080,7 @@ def _build_queue(
 
 
 def _cached_domain_queue(
-    runs_root: Path, profile_slug: str, submitted_path: Path | None,
+    runs_root: Path, profile_slug: str, _submitted_path: Path | None,
 ) -> Json | None:
     path = runs_root / f"_publish_queue.{profile_slug}.json"
     if not path.exists():
@@ -1094,10 +1094,7 @@ def _cached_domain_queue(
     for bucket in ("ready_to_publish", "agent_repair_needed", "curation_needed", "not_ready"):
         rows = data.get(bucket)
         out[bucket] = [
-            _queue_submitted_duplicate_row(
-                _queue_ready_row(row, runs_root), runs_root,
-                submitted_path, profile_slug,
-            )
+            row
             for row in rows if isinstance(row, dict)
         ] if isinstance(rows, list) else []
     return out
