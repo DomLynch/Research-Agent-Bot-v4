@@ -6737,6 +6737,7 @@ def run_cycle(
             cached = _cached_domain_queue(runs_root, profile.slug, submitted_path)
             if cached is not None:
                 ledger["initial_queue_probe_source"] = "cached_domain_queue"
+                _write_ledger(ledger_path, ledger)
                 return cached
         ledger["initial_queue_probe_source"] = "build_queue"
         return build_current_queue()
@@ -6766,9 +6767,16 @@ def run_cycle(
                     )
                 )
             )
-            source_lit_probe_topics = list(_priority_source_literature_repair_decisions(
-                runs_root, profile.slug, limit=1,
-            ))
+            cached_initial_probe = (
+                ledger.get("initial_queue_probe_source") == "cached_domain_queue"
+            )
+            if cached_initial_probe:
+                ledger["initial_source_lit_repair_scan"] = "skipped_cached_domain_queue"
+            source_lit_probe_topics = [] if cached_initial_probe else list(
+                _priority_source_literature_repair_decisions(
+                    runs_root, profile.slug, limit=1,
+                ),
+            )
             for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
@@ -6777,11 +6785,12 @@ def run_cycle(
             ):
                 if topic not in source_lit_probe_topics:
                     source_lit_probe_topics.append(topic)
-            for topic in _repairable_source_literature_decisions(
-                runs_root, profile.slug, limit=1,
-            ):
-                if topic not in source_lit_probe_topics:
-                    source_lit_probe_topics.append(topic)
+            if not cached_initial_probe:
+                for topic in _repairable_source_literature_decisions(
+                    runs_root, profile.slug, limit=1,
+                ):
+                    if topic not in source_lit_probe_topics:
+                        source_lit_probe_topics.append(topic)
             for topic in source_lit_probe_topics:
                 attempt_status = "blocked"
                 papers = source_lit_probe(topic, min_submit_sources * 3)

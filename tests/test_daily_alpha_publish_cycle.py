@@ -846,10 +846,13 @@ def test_refresh_cycle_uses_cached_domain_queue_before_full_build(
         refresh_candidates=True,
         max_refresh_batches=1,
         queue_builder=daily._build_queue,
+        submit=True,
+        submitter=lambda _payload: {"ok": True, "status": 200},
         retraction_mode="metadata",
     )
 
     assert ledger["initial_queue_probe_source"] == "cached_domain_queue"
+    assert ledger["initial_source_lit_repair_scan"] == "skipped_cached_domain_queue"
     assert ledger["status"] == "no_fresh_candidate"
 
 
