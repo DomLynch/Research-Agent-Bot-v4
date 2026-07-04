@@ -3446,11 +3446,22 @@ _NON_BLOCKING_ATTEMPT_STATUSES = {
 def _sync_failed_attempt_blocks(
     ledger: Json, blocked_fingerprints: set[str], blocked_topics: set[str],
 ) -> None:
+    immediate_retry = ledger.get("repair_retry_immediate")
+    immediate_retry_topic = (
+        str(immediate_retry.get("topic") or "").strip()
+        if isinstance(immediate_retry, dict) else ""
+    )
     for attempt in ledger.get("cycle_attempts") or []:
         if not isinstance(attempt, dict):
             continue
         status = str(attempt.get("status") or "")
         if not status or status in _NON_BLOCKING_ATTEMPT_STATUSES:
+            continue
+        if (
+            status == publish_status.CycleStatus.REVIEWER_REVISE.value
+            and immediate_retry_topic
+            and immediate_retry_topic == str(attempt.get("topic") or "").strip()
+        ):
             continue
         fingerprint = str(attempt.get("fingerprint") or "")
         if fingerprint:
@@ -6435,6 +6446,16 @@ def _submission_payload(verdict: Json, root: Path) -> Json:
         },
         "content_hash": "sha256:" + hashlib.sha256(public_memo.encode("utf-8")).hexdigest(),
     }
+    repair_decision = verdict.get("_repair_decision")
+    parent = (
+        _resubmission_parent_submission_id(repair_decision)
+        if isinstance(repair_decision, dict) else ""
+    )
+    if parent:
+        payload["parent_submission_id"] = parent
+        payload["parent_object_id"] = parent
+        payload["metadata"]["revision_of_object_id"] = parent
+        payload["metadata"].setdefault("revision_of", parent)
     # An evidence map is validated on its structured sections (Researka intake
     # reads sections["Evidence Landscape"] for its >=30-word research-question
     # gate). The alpha_memo lane needs no sections (its word budget is 0), so we
@@ -7254,6 +7275,33 @@ def run_cycle(
                                 row["submit_status"] = attempt["status"]
                                 break
                         ledger["cycle_attempts"].append(attempt)
+                        if (
+                            final == _DECISION_REVISE
+                            and _repairable_rejection(decision)
+                            and refresh_candidates
+                            and batch < batch_limit
+                            and memo_refresher is not None
+                            and "repair_retry_immediate" not in ledger
+                        ):
+                            repair_decision = _decision_with_resubmission_parent(
+                                decision, submission_id, override_existing=True,
+                            )
+                            retry_keys = {
+                                str(candidate.get("memo_fingerprint") or ""),
+                                str(attempt.get("fingerprint") or ""),
+                            } - {""}
+                            for retry_fp in retry_keys:
+                                session_retryable.add(retry_fp)
+                                session_retry_decisions[retry_fp] = repair_decision
+                            ledger["repair_retry_immediate"] = {
+                                "topic": candidate.get("topic"),
+                                "reason": attempt["status"],
+                                "requires": "changed_memo_sha256",
+                            }
+                            skip_next_refresh = True
+                            skip_refresh_note = "skipped_after_immediate_repair_retry"
+                            _write_ledger(ledger_path, ledger)
+                            continue
                         if (
                             _repairable_rejection(decision)
                             and refresh_candidates

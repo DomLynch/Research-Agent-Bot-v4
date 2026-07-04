@@ -8631,7 +8631,7 @@ def test_repairable_reject_retries_same_topic_before_refreshing(
     assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_rejected"]
 
 
-def test_repairable_revise_stops_at_fingerprint_attempt_cap(
+def test_repairable_revise_gets_one_immediate_retry_then_defers(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
@@ -8689,15 +8689,22 @@ def test_repairable_revise_stops_at_fingerprint_attempt_cap(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["never_satisfies_reviewer"]
-    assert refreshes == 1
+    assert submitted == ["never_satisfies_reviewer", "never_satisfies_reviewer"]
+    assert refreshes == 2
     assert ledger["status"] == "submit_retry_exhausted"
+    assert ledger["repair_retry_immediate"] == {
+        "topic": "never_satisfies_reviewer",
+        "reason": "reviewer_revise",
+        "requires": "changed_memo_sha256",
+    }
     assert ledger["repair_retry_deferred"] == {
         "topic": "never_satisfies_reviewer",
         "reason": "reviewer_revise",
         "requires": "new_memo_fingerprint",
     }
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise", "reviewer_revise",
+    ]
     # The cap is enforced by submit_retry_exhausted + submitted-once above. The
     # repairable-revise no longer reports as cycle_exhausted_topic (topic pre-block);
     # it reports cycle_failed_submission — accurate, since the memo WAS submitted and
@@ -8707,17 +8714,91 @@ def test_repairable_revise_stops_at_fingerprint_attempt_cap(
     assert ledger["considered"][-1]["status"] == "cycle_failed_submission"
 
 
-def test_repairable_revise_does_not_resubmit_same_topic_in_cycle(
+def test_repairable_revise_resubmits_changed_memo_same_cycle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    verdict = _verdict("same_cycle_repair")
+    _memo_with_source_receipts(root, verdict, 5)
+    submitted: list[dict[str, Any]] = []
+
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
+        return True, "ok"
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        submitted.append(payload)
+        return {
+            "ok": True,
+            "status": 200,
+            "response": {"submission": {"id": f"sub-{len(submitted)}"}},
+        }
+
+    def decision(submission_id: str) -> dict[str, Any]:
+        if submission_id == "sub-1":
+            return {
+                "status": "complete",
+                "decision": "revise",
+                "required_revisions": ["Repair source alignment before resubmission."],
+                "resubmission": {"allowed": True},
+            }
+        return {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/same-cycle"},
+        }
+
+    def refresh(run_dir: Path, _verdict: dict[str, Any]) -> bool:
+        path = run_dir / "alpha_memo.md"
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\nReviewer repair applied.\n",
+            encoding="utf-8",
+        )
+        return True
+
+    monkeypatch.setattr(daily, "_run_step", fake_step)
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(verdict),
+        refresh_candidates=True,
+        max_refresh_batches=3,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        decision_fetcher=decision,
+        page_fetcher=lambda _url: {
+            "ok": True, "status": 200, "body": "<title>Alpha memo</title>",
+        },
+        memo_refresher=refresh,
+        sleep=lambda _seconds: None,
+    )
+
+    assert [payload["topic"] for payload in submitted] == [
+        "same_cycle_repair", "same_cycle_repair",
+    ]
+    assert submitted[1]["parent_submission_id"] == "sub-1"
+    assert ledger["status"] == "published"
+    assert ledger["repair_retry_immediate"] == {
+        "topic": "same_cycle_repair",
+        "reason": "reviewer_revise",
+        "requires": "changed_memo_sha256",
+    }
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise", "published",
+    ]
+
+
+def test_repairable_revise_does_not_resubmit_unchanged_memo_same_cycle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("same_cycle_revise")
     _memo_with_source_receipts(root, verdict, 5)
     submitted: list[str] = []
-    refreshes: list[list[str]] = []
 
-    def fake_step(args: list[str], timeout: int = 1800) -> tuple[bool, str]:
-        refreshes.append(args)
+    def fake_step(_args: list[str], timeout: int = 1800) -> tuple[bool, str]:
         return True, "ok"
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
@@ -8758,13 +8839,15 @@ def test_repairable_revise_does_not_resubmit_same_topic_in_cycle(
     assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
         "reviewer_revise",
     ]
-    assert ledger["repair_retry_deferred"] == {
+    assert ledger["repair_retry_immediate"] == {
         "topic": "same_cycle_revise",
         "reason": "reviewer_revise",
-        "requires": "new_memo_fingerprint",
+        "requires": "changed_memo_sha256",
     }
-    assert len(refreshes) >= 2
-    assert all("same_cycle_revise" in call for call in refreshes[1:])
+    assert any(
+        row.get("status") == "duplicate_submission_fingerprint"
+        for row in ledger.get("considered") or []
+    )
 
 
 def test_repairable_revise_on_final_search_batch_gets_repair_slot(
@@ -8833,15 +8916,17 @@ def test_repairable_revise_on_final_search_batch_gets_repair_slot(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["final_batch_repair"]
-    assert refreshes == 1
-    assert ledger["status"] == "submit_retry_exhausted"
-    assert ledger["repair_retry_deferred"] == {
+    assert submitted == ["final_batch_repair", "final_batch_repair"]
+    assert refreshes == 2
+    assert ledger["status"] == "published"
+    assert ledger["repair_retry_immediate"] == {
         "topic": "final_batch_repair",
         "reason": "reviewer_revise",
-        "requires": "new_memo_fingerprint",
+        "requires": "changed_memo_sha256",
     }
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise", "published",
+    ]
 
 
 def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
@@ -8850,7 +8935,7 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
     root = tmp_path / "repo"
     verdict = _verdict("current_cycle_repair")
     _memo_with_source_receipts(root, verdict, 5)
-    submitted: list[str] = []
+    submitted: list[dict[str, Any]] = []
     refresh_decisions: list[dict[str, Any] | None] = []
     decisions: list[dict[str, Any]] = [
         {
@@ -8871,7 +8956,7 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
         return True, "ok"
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
-        submitted.append(str(payload["topic"]))
+        submitted.append(payload)
         return {
             "ok": True,
             "status": 200,
@@ -8917,15 +9002,21 @@ def test_current_cycle_repairable_revise_does_not_depend_on_ledger_rescan(
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == ["current_cycle_repair"]
-    assert refresh_decisions == [None]
-    assert ledger["status"] == "submit_retry_exhausted"
-    assert ledger["repair_retry_deferred"] == {
+    assert [payload["topic"] for payload in submitted] == [
+        "current_cycle_repair", "current_cycle_repair",
+    ]
+    assert submitted[1]["parent_submission_id"] == "sub-1"
+    assert refresh_decisions[0] is None
+    assert refresh_decisions[1]["resubmission"]["parent_submission_id"] == "sub-1"
+    assert ledger["status"] == "published"
+    assert ledger["repair_retry_immediate"] == {
         "topic": "current_cycle_repair",
         "reason": "reviewer_revise",
-        "requires": "new_memo_fingerprint",
+        "requires": "changed_memo_sha256",
     }
-    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == ["reviewer_revise"]
+    assert [attempt["status"] for attempt in ledger["cycle_attempts"]] == [
+        "reviewer_revise", "published",
+    ]
 
 
 def test_regenerate_on_resubmit_rerenders_clean_candidate_before_submit(
