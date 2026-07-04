@@ -3342,6 +3342,58 @@ def test_same_source_set_revise_blocks_bundle_variant(tmp_path: Path) -> None:
     assert submissions == []
 
 
+def test_non_duplicate_revise_does_not_block_bundle_variant(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    revised = _verdict("revise_old")
+    candidate = _verdict("revise_new")
+    _memo_with_source_receipts(root, revised, 5)
+    _memo_with_source_receipts(root, candidate, 5)
+    revised_fp = daily.memo_fingerprint(revised)
+    decision = {
+        "status": "complete",
+        "decision": "revise",
+        "claim_support_verdict": "supported",
+        "overclaim_verdict": "mild",
+        "required_revisions": [
+            "Narrow the title to the bounded endpoint and remove the broader claim.",
+        ],
+        "resubmission": {"allowed": True},
+    }
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "reviewer_revise",
+        "final_verdict": "revise",
+        "candidate": {
+            "fingerprint": revised_fp,
+            "topic": "revise_old",
+            "run_dir": revised["run_dir"],
+        },
+        "researka_decision": decision,
+    })
+    submissions: list[dict[str, Any]] = []
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(candidate),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda payload: submissions.append(payload) or {
+            "ok": True, "status": 200, "response": {},
+        },
+    )
+
+    assert daily._hard_duplicate_decision(decision) is False
+    assert revised_fp in daily._repairable_rejected_fingerprints(
+        root / "_daily_ledger",
+    )
+    assert daily._hard_duplicate_bundle_signatures(
+        root / "_daily_ledger", None, root,
+    ) == set()
+    assert ledger["status"] == "submitted_to_researka"
+    assert submissions != []
+
+
 def test_repairable_prior_candidate_reenters_empty_queue(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retry_queue")
