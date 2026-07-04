@@ -23,6 +23,7 @@ from agent.signal_memo_writer import (
     _format_large_numbers,
     _grounded_headline,
     _memo_alpha_int,
+    _repair_heterogeneity_requested,
     render_signal_memo,
     write_signal_memo,
 )
@@ -1022,6 +1023,17 @@ def test_agent_repair_heterogeneous_map_blocks_unified_numeric_thesis(
     assert "generic Top 5 list" not in changes
     assert "70% ATP" not in why
     assert "Real tension:" not in why
+
+
+def test_title_reviewer_note_requests_heterogeneous_repair() -> None:
+    assert _repair_heterogeneity_requested({
+        "_repair_decision": {
+            "required_revisions": [
+                "Rename the title to a specific, bounded research signal and "
+                "reconcile the directionally consistent count with heterogeneous contexts.",
+            ],
+        },
+    }) is True
 
 
 def test_ai_reviewer_list_feedback_triggers_heterogeneous_map(

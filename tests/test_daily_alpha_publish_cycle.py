@@ -9974,6 +9974,53 @@ def test_clean_supported_source_literature_revise_gets_one_extra_retry(
     ) == [topic]
 
 
+def test_source_literature_title_revise_gets_render_repair_budget(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    topic = "supply_chain_performance"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    title_revise = {
+        "decision": "revise",
+        "claim_support_verdict": "partially_supported",
+        "required_revisions": [
+            "Rename the title to a specific, bounded research signal and reconcile "
+            "the directionally consistent count with heterogeneous contexts.",
+        ],
+        "major_issues": [],
+        "minor_issues": [],
+        "failed_checks": [],
+        "gate_failures": [],
+        "resubmission": {"allowed": True},
+    }
+    for idx in range(daily._MAX_SUBMISSION_ATTEMPTS_PER_FINGERPRINT):
+        run_dir = root / f"{topic}-source-literature-2026-06-29T06-0{idx}-00Z"
+        run_dir.mkdir(parents=True)
+        run_dir.joinpath("source_literature_memo.md").write_text(
+            "# Source literature boundary memo\n", encoding="utf-8",
+        )
+        daily._write_json(ledger_dir / f"2026-06-29T06-0{idx}-00Z.json", {
+            "domain": {"slug": "business_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": topic,
+                "run_dir": run_dir.name,
+                "fingerprint": f"fp-title-{idx}",
+            },
+            "researka_decision": title_revise,
+        })
+
+    assert daily._source_literature_render_repair_revise(title_revise) is True
+    assert (
+        daily._source_literature_attempt_budget(root, "business_research", topic)
+        == daily._SOURCE_LITERATURE_RENDER_REPAIR_ATTEMPT_LIMIT
+    )
+    assert daily._repairable_source_literature_topics(
+        root, "business_research", limit=3,
+    ) == [topic]
+
+
 def test_repairable_source_literature_exhausted_topic_is_checked_once(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

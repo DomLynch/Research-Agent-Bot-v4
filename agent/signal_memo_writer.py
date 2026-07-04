@@ -1790,7 +1790,7 @@ def _repair_heterogeneity_requested(publish_verdict: dict[str, Any] | None) -> b
         "single coherent research question", "listing multiple unrelated",
         "unrelated accuracy figures", "bullet-point list of facts",
         "specific, justified contrast", "define a single, bounded research signal",
-        "thesis to be a claim, not a list",
+        "bounded research signal", "directionally consistent", "heterogeneous contexts", "rename the title", "thesis to be a claim, not a list",
     ))
 
 
