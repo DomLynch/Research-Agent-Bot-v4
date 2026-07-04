@@ -1079,6 +1079,30 @@ def _build_queue(
     }
 
 
+def _cached_domain_queue(
+    runs_root: Path, profile_slug: str, submitted_path: Path | None,
+) -> Json | None:
+    path = runs_root / f"_publish_queue.{profile_slug}.json"
+    if not path.exists():
+        return None
+    data = _json(path, {})
+    if not isinstance(data, dict):
+        return None
+    out: Json = {
+        "_meta": data.get("_meta", {}) if isinstance(data.get("_meta"), dict) else {},
+    }
+    for bucket in ("ready_to_publish", "agent_repair_needed", "curation_needed", "not_ready"):
+        rows = data.get(bucket)
+        out[bucket] = [
+            _queue_submitted_duplicate_row(
+                _queue_ready_row(row, runs_root), runs_root,
+                submitted_path, profile_slug,
+            )
+            for row in rows if isinstance(row, dict)
+        ] if isinstance(rows, list) else []
+    return out
+
+
 def _norm(value: Any) -> str:
     return " ".join(str(value or "").lower().split())
 
@@ -6711,6 +6735,15 @@ def run_cycle(
             )
         return queue_builder(runs_root, include_archive)
 
+    def build_initial_probe_queue() -> Json:
+        if queue_builder is _build_queue:
+            cached = _cached_domain_queue(runs_root, profile.slug, submitted_path)
+            if cached is not None:
+                ledger["initial_queue_probe_source"] = "cached_domain_queue"
+                return cached
+        ledger["initial_queue_probe_source"] = "build_queue"
+        return build_current_queue()
+
     prev_queue_sig: frozenset[str] = frozenset()
     preflight_queue = None
     initial_probe_empty = False
@@ -6722,7 +6755,7 @@ def run_cycle(
         ledger["next_action"] = "building_current_publish_queue"
         _write_ledger(ledger_path, ledger)
         candidate_queue = _with_repairable_candidates(
-            build_current_queue(), runs_root, profile.slug,
+            build_initial_probe_queue(), runs_root, profile.slug,
         )
         source_lit_available = False
         source_lit_probe_attempts: list[Json] = []

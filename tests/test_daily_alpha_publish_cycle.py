@@ -811,6 +811,40 @@ def test_refresh_cycle_marks_initial_queue_probe_before_queue_build(
     assert written["publish_summary"]["next_action"] == "building_current_publish_queue"
 
 
+def test_refresh_cycle_uses_cached_domain_queue_before_full_build(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo" / "runs"
+    root.mkdir(parents=True)
+    daily._write_json(root / "_publish_queue.ai_research.json", {
+        "ready_to_publish": [],
+        "agent_repair_needed": [],
+        "curation_needed": [],
+        "not_ready": [],
+    })
+
+    def fail_build_queue(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("initial probe should use cached domain queue")
+
+    monkeypatch.setattr(daily, "_build_queue", fail_build_queue)
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", lambda *_args, **_kwargs: {
+        "ok": False, "note": "bounded test stop",
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-04T22-40-00Z",
+        domain="ai_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        queue_builder=daily._build_queue,
+        retraction_mode="metadata",
+    )
+
+    assert ledger["initial_queue_probe_source"] == "cached_domain_queue"
+    assert ledger["status"] == "no_fresh_candidate"
+
+
 def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
