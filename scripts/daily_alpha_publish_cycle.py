@@ -3460,6 +3460,8 @@ def _sync_failed_attempt_blocks(
 
 
 def _repairable_rejection(decision: Json) -> bool:
+    if _hard_duplicate_decision(decision):
+        return False
     support = str(decision.get("claim_support_verdict") or "").lower()
     if (
         decision.get("decision") == _DECISION_REJECT
@@ -3486,6 +3488,32 @@ def _repairable_rejection(decision: Json) -> bool:
     text = " ".join(reasons).lower()
     text = f"{text} {_revision_notes(decision).lower()}"
     return any(reason in text for reason in _REPAIRABLE_REJECTION_REASONS)
+
+
+def _hard_duplicate_decision(decision: Any) -> bool:
+    if (
+        not isinstance(decision, dict)
+        or decision.get("decision") not in {_DECISION_REJECT, _DECISION_REVISE}
+    ):
+        return False
+    reasons = {
+        str(decision.get("failure_category") or ""),
+        *(str(x) for x in decision.get("failed_checks") or []),
+        _revision_notes(decision),
+    }
+    for gate in decision.get("gate_failures") or []:
+        if isinstance(gate, dict):
+            reasons.add(str(gate.get("name") or ""))
+            reasons.add(str(gate.get("reason") or ""))
+    text = " ".join(reasons).lower()
+    return (
+        "integrity_duplicate" in text
+        or "exact-content duplicate" in text
+        or "duplicate_submission" in text
+        or "substantially new content" in text
+        or "same source doi set" in text
+        or "merge or differentiate from existing alpha memo" in text
+    )
 
 
 def _submission_attempt_budget(decision: Any) -> int:
@@ -4147,6 +4175,28 @@ def _published_bundle_signatures(
     return sigs
 
 
+def _hard_duplicate_bundle_signatures(
+    ledger_dir: Path, domain: str | None, root: Path,
+) -> set[str]:
+    sigs: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        ledger = _json(path, {})
+        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
+            continue
+        records = [ledger, *(x for x in ledger.get("cycle_attempts") or [] if isinstance(x, dict))]
+        for record in records:
+            decision = record.get("researka_decision") if isinstance(record, dict) else None
+            if not _hard_duplicate_decision(decision):
+                continue
+            candidate_raw = record.get("candidate")
+            candidate = candidate_raw if isinstance(candidate_raw, dict) else {}
+            run_ref = record.get("run_dir") or candidate.get("run_dir")
+            sig = _bundle_signature({"run_dir": run_ref}, root) if run_ref else ""
+            if sig:
+                sigs.add(sig)
+    return sigs
+
+
 def _shape_text(value: Any) -> str:
     if isinstance(value, dict):
         return " ".join(_shape_text(v) for v in value.values())
@@ -4401,6 +4451,9 @@ def select_candidate(
     seen = _seen_submission_fingerprints_for_domain(submitted_path, domain)
     published_bundle_sigs = _published_bundle_signatures(
         submitted_path, domain, runs_root,
+    )
+    duplicate_rejected_bundle_sigs = _hard_duplicate_bundle_signatures(
+        submitted_path.parent, domain, runs_root,
     )
     retryable = _repairable_rejected_fingerprints(submitted_path.parent, domain)
     retry_decisions = _repairable_decisions_by_fingerprint(
@@ -4854,7 +4907,9 @@ def select_candidate(
                     else min_direct_source_count
                 )
                 bundle_sig = _bundle_signature(verdict, runs_root)
-                if bundle_sig and bundle_sig in published_bundle_sigs:
+                if bundle_sig and bundle_sig in duplicate_rejected_bundle_sigs:
+                    status = "duplicate_publication_bundle"
+                elif bundle_sig and bundle_sig in published_bundle_sigs:
                     # Same cited papers as an already-published memo (a different
                     # topic-name variant) — Researka would reject it as an
                     # exact-content duplicate, so never spend the submission.

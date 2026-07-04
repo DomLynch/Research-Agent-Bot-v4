@@ -3246,6 +3246,102 @@ def test_repairable_retry_does_not_resubmit_unchanged_memo(tmp_path: Path) -> No
     assert ledger["considered"][0]["status"] == "duplicate_submission_fingerprint"
 
 
+def test_integrity_duplicate_rejection_blocks_bundle_variant(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    rejected = _verdict("duplicate_old")
+    candidate = _verdict("duplicate_new")
+    _memo_with_source_receipts(root, rejected, 5)
+    _memo_with_source_receipts(root, candidate, 5)
+    rejected_fp = daily.memo_fingerprint(rejected)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "reviewer_rejected",
+        "final_verdict": "rejected",
+        "candidate": {
+            "fingerprint": rejected_fp,
+            "topic": "duplicate_old",
+            "run_dir": rejected["run_dir"],
+        },
+        "researka_decision": {
+            "status": "complete",
+            "decision": "reject",
+            "failure_category": "integrity_duplicate",
+            "failed_checks": [
+                "Exact-content duplicate of publication pub-1. "
+                "Resubmission requires substantially new content.",
+            ],
+            "resubmission": {"allowed": True},
+        },
+    })
+    submissions: list[dict[str, Any]] = []
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(candidate),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda payload: submissions.append(payload) or {
+            "ok": True, "status": 200, "response": {},
+        },
+    )
+
+    assert rejected_fp not in daily._repairable_rejected_fingerprints(
+        root / "_daily_ledger",
+    )
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["considered"][0]["status"] == "duplicate_publication_bundle"
+    assert submissions == []
+
+
+def test_same_source_set_revise_blocks_bundle_variant(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    rejected = _verdict("source_set_old")
+    candidate = _verdict("source_set_new")
+    _memo_with_source_receipts(root, rejected, 5)
+    _memo_with_source_receipts(root, candidate, 5)
+    rejected_fp = daily.memo_fingerprint(rejected)
+    daily._write_json(root / "_daily_ledger" / "2026-05-21.json", {
+        "status": "reviewer_revise",
+        "final_verdict": "revise",
+        "candidate": {
+            "fingerprint": rejected_fp,
+            "topic": "source_set_old",
+            "run_dir": rejected["run_dir"],
+        },
+        "researka_decision": {
+            "status": "complete",
+            "decision": "revise",
+            "claim_support_verdict": "supported",
+            "overclaim_verdict": "none",
+            "required_revisions": [
+                "Merge or differentiate from existing alpha memo using the same source DOI set: pub-1",
+            ],
+            "resubmission": {"allowed": True},
+        },
+    })
+    submissions: list[dict[str, Any]] = []
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-05-22",
+        queue=_queue(candidate),
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=lambda payload: submissions.append(payload) or {
+            "ok": True, "status": 200, "response": {},
+        },
+    )
+
+    assert rejected_fp not in daily._repairable_rejected_fingerprints(
+        root / "_daily_ledger",
+    )
+    assert ledger["status"] == "no_fresh_candidate"
+    assert ledger["considered"][0]["status"] == "duplicate_publication_bundle"
+    assert submissions == []
+
+
 def test_repairable_prior_candidate_reenters_empty_queue(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     verdict = _verdict("retry_queue")
