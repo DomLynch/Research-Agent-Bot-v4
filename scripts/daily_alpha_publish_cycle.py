@@ -5163,6 +5163,7 @@ def _source_literature_topic_candidates(
             if paper_count >= min_sources and (
                 fact_source_count >= min_sources
                 or _source_literature_fallback_submit_enabled()
+                or publish_literature._non_biomedical(profile_slug)
             ):
                 topics.append(topic)
                 seen.add(topic)
@@ -5275,6 +5276,7 @@ def _source_literature_blocked_parent_variant_topics(
                 fact_source_count < min_sources
                 and source_paper_count < min_sources
                 and not _source_literature_fallback_submit_enabled()
+                and not publish_literature._non_biomedical(profile_slug)
             ):
                 continue
             parents.append(topic)
@@ -6697,7 +6699,7 @@ def run_cycle(
         )
         source_lit_available = False
         source_lit_probe_attempts: list[Json] = []
-        if submit and profile.slug != "ai_research":
+        if submit:
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: (
                     _source_literature_candidate_papers(
@@ -7363,7 +7365,6 @@ def run_cycle(
             return ledger
     if (
         submit
-        and profile.slug != "ai_research"
         and not ledger["cycle_attempts"]
     ):
         paper_fetcher = source_paper_fetcher
@@ -7396,6 +7397,12 @@ def run_cycle(
             topic for topic in repair_topics if topic not in set(priority_repair_topics)
         ]
         forced_source_lit = source_literature_forced_papers or {}
+        source_lit_published_bundle_sigs = _published_bundle_signatures(
+            submitted_path, profile.slug, runs_root,
+        )
+        source_lit_duplicate_rejected_bundle_sigs = _hard_duplicate_bundle_signatures(
+            submitted_path.parent, profile.slug, runs_root,
+        )
         resumable_source_lit = _resumable_source_literature_payloads(
             runs_root, profile.slug, min_submit_sources, source_literature_blocked_topics,
             limit=source_lit_scan_limit,
@@ -7647,6 +7654,17 @@ def run_cycle(
                         parent_submission_id=_resubmission_parent_submission_id(repair_decision),
                     )
                 fingerprint = str(candidate.get("memo_fingerprint") or "")
+                bundle_sig = _bundle_signature(candidate, runs_root)
+                if bundle_sig and bundle_sig in source_lit_duplicate_rejected_bundle_sigs:
+                    fallback_attempt["status"] = "blocked"
+                    fallback_attempt["reason"] = "duplicate_publication_bundle"
+                    fallback_attempt["bundle_signature"] = bundle_sig
+                    continue
+                if bundle_sig and bundle_sig in source_lit_published_bundle_sigs:
+                    fallback_attempt["status"] = "blocked"
+                    fallback_attempt["reason"] = "duplicate_published_bundle"
+                    fallback_attempt["bundle_signature"] = bundle_sig
+                    continue
                 if fingerprint and _same_memo_seen(
                     submitted_path, fingerprint, _memo_sha256(candidate, runs_root), profile.slug,
                 ):

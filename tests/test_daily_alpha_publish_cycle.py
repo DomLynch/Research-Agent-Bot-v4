@@ -12684,6 +12684,7 @@ def test_source_literature_fallback_skips_exact_submitted_memo(
         date="2026-06-10T17-00-00Z",
     )
     fp = str(old_candidate.get("memo_fingerprint") or "")
+    bundle_sig = daily._bundle_signature(old_candidate, root)
     daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
         "date": "2026-06-10T17-00-00Z",
         "domain": old_candidate.get("domain"),
@@ -12727,9 +12728,9 @@ def test_source_literature_fallback_skips_exact_submitted_memo(
 
     assert submitted_topics == ["fresh_boundary"]
     assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
-        "duplicate_submission_fingerprint", "ok",
+        "duplicate_published_bundle", "ok",
     ]
-    assert ledger["source_literature_fallback_attempts"][0]["fingerprint"] == fp
+    assert ledger["source_literature_fallback_attempts"][0]["bundle_signature"] == bundle_sig
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "fresh_boundary"
 
@@ -12853,7 +12854,7 @@ def test_source_literature_fallback_widens_scan_after_recent_duplicate(
         "recent_submissions_expand_candidate_window"
     )
     assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
-        "duplicate_submission_fingerprint",
+        "duplicate_published_bundle",
         "source_floor_below_min",
         "source_floor_below_min",
         "source_floor_below_min",
@@ -12863,6 +12864,88 @@ def test_source_literature_fallback_widens_scan_after_recent_duplicate(
     ]
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "fresh_boundary"
+
+
+def test_source_literature_fallback_skips_published_bundle_variant(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    duplicate_topic = "supply_chain_resilience_value"
+    fresh_topic = "platform_strategy_network_effects"
+
+    def papers_for(topic: str, prefix: str) -> list[dict[str, Any]]:
+        labels = ("Alpha", "Beta", "Gamma", "Delta", "Epsilon")
+        return [
+            {
+                "title": f"{labels[idx]} {topic.replace('_', ' ')} source",
+                "doi": f"10.7777/{prefix}-{idx}",
+                "journal_name": f"{labels[idx]} {prefix} Journal",
+                "source_fact": {
+                    "canonical_phrase": (
+                        f"{topic.replace('_', ' ')} significantly improves "
+                        f"bounded business outcome {idx}"
+                    ),
+                    "population": "firms",
+                    "intervention": topic.replace("_", " "),
+                    "endpoint": f"business outcome {idx}",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    duplicate_papers = papers_for(duplicate_topic, "dup")
+    fresh_papers = papers_for(fresh_topic, "fresh")
+    old_candidate, _old_payload = daily._source_literature_payload(
+        profile_slug="business_research",
+        topic="supply_chain_resilience_profitability",
+        papers=duplicate_papers,
+        runs_root=root,
+        date="2026-07-04T10-00-00Z",
+    )
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-07-04T10-00-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": old_candidate.get("topic"),
+        "run_dir": old_candidate.get("run_dir"),
+        "fingerprint": old_candidate.get("memo_fingerprint"),
+        "bundle_signature": daily._bundle_signature(old_candidate, root),
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+        "final_verdict": "accept",
+        "published": 1,
+        "submission_id": "old-sub",
+    }])
+    submitted_topics: list[str] = []
+
+    def fetch(topic: str, _limit: int) -> list[dict[str, Any]]:
+        return duplicate_papers if topic == duplicate_topic else fresh_papers
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-04T18-00-00Z",
+        domain="business_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=fetch,
+        source_literature_priority_topics=[duplicate_topic, fresh_topic],
+        submitter=lambda payload: submitted_topics.append(str(payload.get("topic"))) or {
+            "ok": True, "status": 200, "response": {"submission": {"id": "fresh-sub"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/fresh-business"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Fresh</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert submitted_topics == [fresh_topic]
+    assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
+        "duplicate_published_bundle", "ok",
+    ]
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == fresh_topic
 
 
 def test_source_literature_fallback_skips_recent_underfilled_attempts_after_duplicate(
@@ -13012,7 +13095,7 @@ def test_source_literature_fallback_skips_recent_underfilled_attempts_after_dupl
     assert live_fetches == []
     assert submissions == ["cellular_resilience"]
     assert [row["reason"] for row in ledger["source_literature_fallback_attempts"]] == [
-        "duplicate_submission_fingerprint", "ok",
+        "duplicate_published_bundle", "ok",
     ]
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "cellular_resilience"
@@ -18768,7 +18851,7 @@ def test_source_literature_fallback_blocks_repeated_report_series(
     ) == (False, "repeated_title_series")
 
 
-def test_source_literature_fallback_is_not_used_for_ai_domain(
+def test_source_literature_fallback_runs_for_ai_domain(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "repo"
@@ -18781,8 +18864,22 @@ def test_source_literature_fallback_is_not_used_for_ai_domain(
             "fact_source_count": 0,
         }],
     }), encoding="utf-8")
+    labels = ("Alpha", "Beta", "Gamma", "Delta", "Epsilon")
     papers = [
-        {"title": f"LLM evaluation benchmark paper {idx}", "doi": f"10.1234/{idx}"}
+        {
+            "title": f"{labels[idx]} LLM evaluation benchmark paper",
+            "doi": f"10.1234/{idx}",
+            "journal_name": f"{labels[idx]} AI Eval Journal",
+            "source_fact": {
+                "canonical_phrase": (
+                    f"llm evaluation benchmark significantly improves bounded "
+                    f"model assessment outcome {idx}"
+                ),
+                "population": "model evaluations",
+                "intervention": "llm evaluation benchmark",
+                "endpoint": f"model assessment outcome {idx}",
+            },
+        }
         for idx in range(5)
     ]
     submitted: list[dict[str, Any]] = []
@@ -18802,13 +18899,20 @@ def test_source_literature_fallback_is_not_used_for_ai_domain(
         submit=True,
         submitter=submitter,
         source_paper_fetcher=lambda _topic, _limit: papers,
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/ai-source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>AI</title>"},
         fetcher=lambda _doi: {"message": {}},
         sleep=lambda _seconds: None,
     )
 
-    assert submitted == []
-    assert ledger["status"] == "no_fresh_candidate"
-    assert "source_literature_fallback" not in ledger
+    assert submitted != []
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "llm_evaluation"
+    assert ledger["source_literature_fallback"]["status"] == "selected"
 
 
 def test_initial_probe_refreshes_when_ready_row_recomputes_unactionable(
