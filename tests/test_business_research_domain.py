@@ -1578,6 +1578,81 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
 
 
+def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    import agent.topic_discovery as topic_discovery_mod
+    import scripts.run_topic_discovery as discovery
+
+    calls: list[str] = []
+    sleeps: list[float] = []
+    monkeypatch.setenv("V5_MEMO_FULL_RAW_INDEX_TOKEN", "tok")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "2")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_POLL_SECONDS", "0.1")
+    monkeypatch.setenv(
+        "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
+        str(tmp_path / "fullraw.lock"),
+    )
+    monkeypatch.setattr(sweep, "_business_fullraw_queries", lambda _topic: ("firm performance",))
+    monkeypatch.setattr(sweep.time, "sleep", lambda seconds: sleeps.append(seconds))
+    discovery._FULLRAW_PROBE_EVENTS.clear()
+
+    def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(query)
+        if len(calls) == 1:
+            topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
+            topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
+                "status": "running",
+                "key_running": True,
+                "inflight_count": 1,
+                "max_inflight": 1,
+            }
+            discovery._FULLRAW_PROBE_EVENTS.append({
+                "query": query,
+                "status": "in_progress_cache_hit",
+                "async_status": "running",
+                "key_running": True,
+                "partial_shard_search": True,
+            })
+            return []
+        topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
+            "shards_searched": 1525,
+            "partial_shard_search": False,
+            "sweep_failed_shards": 0,
+            "source_count_searched": 5,
+        }
+        topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {}
+        discovery._FULLRAW_PROBE_EVENTS.append({
+            "query": query,
+            "status": "complete",
+            "partial_shard_search": False,
+            "shards_searched": 1525,
+        })
+        return [
+            {
+                "paper_id": f"paper-{idx}",
+                "title": f"{query} source {idx}",
+                "source_fact": {
+                    "canonical_phrase": f"{query} changes firm performance {idx}.",
+                    "population": "firms",
+                    "intervention": query,
+                    "endpoint": "firm performance",
+                },
+            }
+            for idx in range(5)
+        ]
+
+    monkeypatch.setattr(discovery, "_seed_fullraw_papers", fake_seed_fullraw)
+
+    result = sweep._strict_fullraw_probe("firm_performance", runs_root=tmp_path / "runs")
+
+    assert calls == ["firm performance", "firm performance"]
+    assert sleeps == [0.1]
+    assert result["status"] == "complete"
+    assert result["paper_count"] == 5
+    assert result["candidate_fact_source_count"] == 5
+
+
 def test_business_sweep_fullraw_backoff_uses_completed_cache_receipt(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

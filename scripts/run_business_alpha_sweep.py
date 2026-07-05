@@ -759,7 +759,7 @@ def _strict_fullraw_probe(
                         result.setdefault(
                             "backoff_seconds", _business_fullraw_backoff_seconds(),
                         )
-                        if remaining <= 0:
+                        if result.get("key_running") is not True or remaining <= 0:
                             break
                         time.sleep(min(max(poll_seconds, 0.1), remaining))
                         continue
