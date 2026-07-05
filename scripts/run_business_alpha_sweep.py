@@ -753,13 +753,16 @@ def _strict_fullraw_probe(
                         break
                     if result.get("queue_shed") is True:
                         break
+                    remaining = queue_retry_deadline - time.monotonic()
                     if _fullraw_admitted_pending_event(result):
                         result["queue_waiting"] = True
                         result.setdefault(
                             "backoff_seconds", _business_fullraw_backoff_seconds(),
                         )
-                        break
-                    remaining = queue_retry_deadline - time.monotonic()
+                        if result.get("key_running") is not True or remaining <= 0:
+                            break
+                        time.sleep(min(max(poll_seconds, 0.1), remaining))
+                        continue
                     if remaining <= 0:
                         break
                     time.sleep(min(poll_seconds, remaining))
