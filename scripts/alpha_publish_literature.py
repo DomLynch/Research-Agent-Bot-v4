@@ -2474,6 +2474,17 @@ def payload(
         setting for setting in context_only_settings
         if title_key(setting) not in {"firm", "firms", "companies", "businesses", "organizations"}
     ]
+    adjacent_context_labels: list[str] = []
+    for paper in selected:
+        if _paper_evidence_role(paper, topic, profile.slug) not in _CONTEXT_ONLY_ROLES:
+            continue
+        setting = _source_context_label(paper, non_bio=non_bio)
+        if title_key(setting) in {"firm", "firms", "companies", "businesses", "organizations"}:
+            continue
+        exposure = _exposure_context_label(paper, non_bio=non_bio)
+        label = f"{exposure} in {setting}" if exposure else setting
+        if label and title_key(label) not in {title_key(value) for value in adjacent_context_labels}:
+            adjacent_context_labels.append(label)
     directional_endpoint_counts = {
         endpoint: directional_endpoint_rows.count(endpoint)
         for endpoint in dict.fromkeys(directional_endpoint_rows)
@@ -2868,6 +2879,13 @@ def payload(
             f"select sources sharing one context family rather than spanning {context_text}."
         ),
     ]
+    if context_heavy_non_bio_scope and adjacent_context_labels:
+        adjacent_label = join_contexts(adjacent_context_labels[:2])
+        next_gaps[0] = (
+            f"A stronger source-scope memo should either drop the adjacent {adjacent_label} "
+            "receipt(s) or add matched receipts that test that adjacent construct across "
+            "comparable settings."
+        )
     if not non_bio and "human clinical/observational" not in contexts:
         next_gaps.insert(0, "No source in this selected bundle tests human clinical endpoints.")
     if non_bio and directional_endpoints and endpoints_by_label.get("null/mixed"):
@@ -3120,7 +3138,9 @@ def payload(
         endpoint for endpoint in title_directional_endpoints
         if endpoint != primary_duplicated_endpoint
     ]
-    adjacent_context_title = join_contexts(public_context_only_settings[:2])
+    adjacent_context_title = join_contexts(
+        (adjacent_context_labels or public_context_only_settings)[:2],
+    )
     adjacent_context_tail = (
         f" plus adjacent {adjacent_context_title} context"
         if adjacent_context_title else ""

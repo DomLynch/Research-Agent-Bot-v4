@@ -17656,8 +17656,8 @@ def test_source_literature_payload_does_not_overclaim_context_only_receipts(
     ))
     assert payload["title"] == (
         "source-scope map of digital transformation: firm environmental "
-        "performance and firm profitability metric families plus adjacent banking "
-        "firms context"
+        "performance and firm profitability metric families plus adjacent big data "
+        "capability in banking firms context"
     )
     assert "direction-bearing map across" not in public_text
     assert "direction-bearing evidence across" not in public_text
@@ -17665,6 +17665,7 @@ def test_source_literature_payload_does_not_overclaim_context_only_receipts(
     assert "comparator outcomes" not in public_text
     assert "Source-scope map:" in payload["abstract"]
     assert "not a comparator claim" in payload["abstract"]
+    assert "drop the adjacent big data capability in banking firms receipt(s)" in payload["markdown"]
     assert payload["evidence_bundle"]["source_bundle_count"] == 5
     assert payload["evidence_bundle"]["source_diversity"]["source_identity_count"] == 5
     assert payload["evidence_bundle"]["source_diversity"]["source_outlet_count"] == 5
@@ -18544,7 +18545,7 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert payload["abstract"].startswith(
         "digital transformation: Source-scope map:",
     )
-    assert "plus adjacent banking firms context" in payload["title"]
+    assert "plus adjacent use of big data in banking firms context" in payload["title"]
     assert "direction-bearing evidence across" not in payload["abstract"]
     assert "not a comparator claim" in payload["abstract"]
     assert "This receipt-backed scoping note" not in payload["abstract"]
@@ -18671,7 +18672,8 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
     ))
     assert payload["title"] == (
         "source-scope map of digital transformation: environmental performance "
-        "and firm performance metric families plus adjacent banking firms context"
+        "and firm performance metric families plus adjacent big data capability "
+        "in banking firms context"
     )
     assert "comparator outcomes" not in public_text
     assert "Bounded research signal" not in public_text
@@ -18681,6 +18683,7 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
     assert "direction-bearing receipts: 3" in payload["markdown"]
     assert "context/antecedent/model receipts: 2 excluded from effect support" in payload["markdown"]
     assert "Topic-overlap rationale: retained as adjacent scope" in payload["markdown"]
+    assert "drop the adjacent big data capability in banking firms receipt(s)" in payload["markdown"]
 
 
 def test_source_literature_payload_scopes_unmatched_directional_metrics(
