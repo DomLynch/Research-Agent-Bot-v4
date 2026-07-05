@@ -17655,8 +17655,9 @@ def test_source_literature_payload_does_not_overclaim_context_only_receipts(
         payload["markdown"],
     ))
     assert payload["title"] == (
-        "digital transformation: source-scope map across firm environmental "
-        "performance and firm profitability receipts plus adjacent banking firms context"
+        "source-scope map of digital transformation: firm environmental "
+        "performance and firm profitability metric families plus adjacent banking "
+        "firms context"
     )
     assert "direction-bearing map across" not in public_text
     assert "direction-bearing evidence across" not in public_text
@@ -18669,13 +18670,14 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
         payload["markdown"],
     ))
     assert payload["title"] == (
-        "digital transformation: source-scope map across environmental "
-        "performance and firm performance receipts plus adjacent banking firms context"
+        "source-scope map of digital transformation: environmental performance "
+        "and firm performance metric families plus adjacent banking firms context"
     )
     assert "comparator outcomes" not in public_text
     assert "Bounded research signal" not in public_text
     assert "has separate direction-bearing receipts for" not in public_text
     assert "not a comparator claim" in payload["abstract"]
+    assert "separate metric families, not one harmonized outcome" in payload["abstract"]
     assert "direction-bearing receipts: 3" in payload["markdown"]
     assert "context/antecedent/model receipts: 2 excluded from effect support" in payload["markdown"]
     assert "Topic-overlap rationale: retained as adjacent scope" in payload["markdown"]

@@ -2822,9 +2822,10 @@ def payload(
             f"{topic_label}: Source-scope map: {directional_count} of "
             f"{len(selected)} receipts are direction-bearing for "
             f"{join_contexts(directional_endpoints[:3])}; {context_only_count} "
-            "adjacent receipts remain context-only. This is a source-bundle "
-            "scoping map, not a comparator claim, pooled effect, or broad market "
-            "signal."
+            "adjacent receipts remain context-only. The direction-bearing rows "
+            "are separate metric families, not one harmonized outcome. This is "
+            "a source-bundle scoping map, not a comparator claim, pooled effect, "
+            "or broad market signal."
         )
     elif non_bio and directional_endpoints and nullish_endpoints:
         abstract_text = (
@@ -3140,7 +3141,7 @@ def payload(
             non_bio and multi_display_outcome and context_only_count
             and title_directional_endpoints and nullish_endpoints
         ) else
-        f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
+        f"{join_contexts(title_directional_endpoints[:3])} metric families"
         f"{adjacent_context_tail}"
         if context_heavy_non_bio_scope else
         f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
@@ -3181,7 +3182,11 @@ def payload(
         if non_bio and non_bio_signal_parts else
         "one bounded, context-dependent signal across receipts"
     )
-    generated_title = f"{title_topic_label}: {title_tail}"
+    generated_title = (
+        f"source-scope map of {title_topic_label}: {title_tail}"
+        if non_bio and context_heavy_non_bio_scope else
+        f"{title_topic_label}: {title_tail}"
+    )
     if non_bio and _source_title_alignment_needed(
         requested_topic, generated_title, topic_label, selected,
     ):
