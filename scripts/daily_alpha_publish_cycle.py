@@ -130,6 +130,19 @@ def _source_literature_fallback_submit_enabled() -> bool:
     }
 
 
+def _source_literature_fallback_allowed(ledger: Json) -> bool:
+    attempts = [row for row in ledger.get("cycle_attempts") or [] if isinstance(row, dict)]
+    if not attempts:
+        return True
+    terminal_success = {
+        publish_status.CycleStatus.PUBLISHED.value,
+        publish_status.CycleStatus.DRY_RUN_SELECTED.value,
+        "doi_minted",
+        "submitted",
+    }
+    return not any(str(row.get("status") or "") in terminal_success for row in attempts)
+
+
 def _terminate_process_group(proc: subprocess.Popen[str], sig: signal.Signals | int) -> None:
     if proc.poll() is not None:
         return
@@ -7494,7 +7507,7 @@ def run_cycle(
             return ledger
     if (
         submit
-        and not ledger["cycle_attempts"]
+        and _source_literature_fallback_allowed(ledger)
     ):
         paper_fetcher = source_paper_fetcher
         source_lit_scan_limit = (

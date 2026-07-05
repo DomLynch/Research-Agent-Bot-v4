@@ -1883,6 +1883,7 @@ def _bounded_signal_sentence(
     non_bio: bool,
     outcome_families: list[str] | None = None,
     display_label: str = "",
+    nonpoolable_direction_scope: bool = False,
 ) -> str:
     topic_text = display_label or _topic_signal_label(topic, non_bio=non_bio)
     family_text = join_contexts((outcome_families or [])[:3])
@@ -1922,13 +1923,16 @@ def _bounded_signal_sentence(
             f"{', '.join(descriptive[:2])}"
             if descriptive else ""
         )
-        if len(directional) > 1 and context_only:
+        if len(directional) > 1 and (context_only or nonpoolable_direction_scope):
+            context_tail = (
+                f"; context-only endpoints ({join_contexts(context_only[:2])}) "
+                "remain adjacent scope context only"
+                if context_only else ""
+            )
             return (
-                f"Bounded signal: {topic_text} has separate direction-bearing receipts for "
-                f"{directional_text}; context-only endpoints "
-                f"({join_contexts(context_only[:2])}) remain adjacent "
-                "scope context only. These are non-poolable metric cells, not support "
-                "for the topic as a whole."
+                f"Bounded signal: {topic_text} maps separate direction-bearing cells for "
+                f"{directional_text}{context_tail}. These are non-poolable metric "
+                "cells, not support for the topic as a whole."
             )
         if len(directional) > 1:
             return (
@@ -2455,9 +2459,6 @@ def payload(
         for label in _CONTEXT_ONLY_ROLES
         for endpoint in endpoints_by_label.get(label, [])
     ))
-    non_bio_nonpoolable_direction_scope = (
-        non_bio and len(directional_endpoints) > 1 and bool(context_only_endpoints)
-    )
     directional_endpoint_counts = {
         endpoint: directional_endpoint_rows.count(endpoint)
         for endpoint in dict.fromkeys(directional_endpoint_rows)
@@ -2470,6 +2471,11 @@ def payload(
     primary_duplicated_endpoint = (
         sorted(duplicated_directional_endpoints, key=lambda item: item[1], reverse=True)[0][0]
         if duplicated_directional_endpoints else ""
+    )
+    non_bio_nonpoolable_direction_scope = (
+        non_bio
+        and len(directional_endpoints) > 1
+        and (bool(context_only_endpoints) or not primary_duplicated_endpoint)
     )
     nullish_endpoints = list(dict.fromkeys(
         endpoints_by_label.get("null/mixed", [])
@@ -2584,6 +2590,7 @@ def payload(
     bounded_signal = _bounded_signal_sentence(
         topic, endpoints_by_label, non_bio=non_bio,
         outcome_families=display_outcome_families, display_label=topic_label,
+        nonpoolable_direction_scope=non_bio_nonpoolable_direction_scope,
     )
     if context_heavy_non_bio_scope:
         bounded_signal = (
@@ -2816,9 +2823,13 @@ def payload(
             "pooled causal, policy-prescriptive, or market-generalized claim."
         )
     elif non_bio and not thin_non_bio_scope:
+        no_pooling_clause = (
+            "Context-only rows are adjacent scope, not effect support; no pooled "
+            if context_only_count else "No pooled "
+        )
         abstract_text = (
-            f"{topic_label}: {bounded_signal} Context-only rows are "
-            "adjacent scope, not effect support; no pooled causal, policy-prescriptive, "
+            f"{topic_label}: {bounded_signal} {no_pooling_clause}"
+            "causal, policy-prescriptive, "
             "or market-generalized claim is made."
         )
     moderator_note = _specific_moderator_note(facts, source_types)
@@ -3099,6 +3110,8 @@ def payload(
         ) else
         f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
         if context_heavy_non_bio_scope else
+        f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
+        if non_bio_nonpoolable_direction_scope else
         (
             f"{len(bundle)}-source map: "
             f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "

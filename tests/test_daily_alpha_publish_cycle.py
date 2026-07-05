@@ -9458,6 +9458,100 @@ def test_source_literature_fallback_runs_after_refresh_failure(
     assert seen_payload["topic"] == "glycation_AGEs"
 
 
+def test_source_literature_fallback_runs_after_queue_attempt_rejected(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    queue_candidate = _verdict("queue_failure") | {
+        "domain": {"slug": "longevity_research"},
+    }
+    _memo_with_source_receipts(root, queue_candidate, 5)
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "usable_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    submitted_topics: list[str] = []
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        topic = str(payload.get("topic") or "")
+        submitted_topics.append(topic)
+        return {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": f"sub-{topic}"}},
+        }
+
+    monkeypatch.setattr(
+        daily, "_refresh_candidate_batch",
+        lambda *_args, **_kwargs: {"ok": True, "ran_topics": []},
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-05T12-00-00Z",
+        domain="longevity_research",
+        queue=_queue(queue_candidate),
+        refresh_candidates=True,
+        max_refresh_batches=2,
+        submit=True,
+        retraction_mode="crossref",
+        fetcher=lambda _doi: {"message": {}},
+        submitter=submitter,
+        source_paper_fetcher=lambda _topic, _limit: _usable_boundary_papers(),
+        decision_fetcher=lambda submission_id: {
+            "status": "complete",
+            "decision": "accept" if submission_id == "sub-usable_boundary" else "reject",
+            "claim_support_verdict": "supported"
+            if submission_id == "sub-usable_boundary" else "unsupported",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {
+            "ok": True, "status": 200, "body": "<title>Source</title>",
+        },
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert submitted_topics == ["queue_failure", "usable_boundary"]
+    assert ledger["source_literature_fallback"]["status"] == "selected"
+    assert ledger["cycle_attempts"][0]["status"] == "reviewer_rejected"
+    assert ledger["cycle_attempts"][-1]["status"] == "published"
+
+
+def test_source_literature_fallback_blocks_terminal_success_only() -> None:
+    assert not daily._source_literature_fallback_allowed({
+        "cycle_attempts": [{"status": "published"}],
+    })
+    assert not daily._source_literature_fallback_allowed({
+        "cycle_attempts": [{"status": "doi_minted"}],
+    })
+    assert not daily._source_literature_fallback_allowed({
+        "cycle_attempts": [{"status": "submitted"}],
+    })
+    assert daily._source_literature_fallback_allowed({
+        "cycle_attempts": [{"status": "submitted_to_researka"}],
+    })
+
+
+def test_source_literature_fallback_allows_repeated_rejections() -> None:
+    assert daily._source_literature_fallback_allowed({
+        "cycle_attempts": [
+            {"status": "reviewer_rejected"},
+            {"status": "reviewer_rejected"},
+        ],
+    })
+
+
+def test_source_literature_fallback_blocks_success_even_after_failure() -> None:
+    assert not daily._source_literature_fallback_allowed({
+        "cycle_attempts": [
+            {"status": "reviewer_rejected"},
+            {"status": "published"},
+            {"status": "reviewer_rejected"},
+        ],
+    })
+
+
 def test_long_submit_refresh_reaches_source_lit_after_fullraw_batches(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -18576,6 +18670,85 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
     assert "not a comparator claim" in payload["abstract"]
     assert "direction-bearing receipts: 3" in payload["markdown"]
     assert "context/antecedent/model receipts: 2 excluded from effect support" in payload["markdown"]
+
+
+def test_source_literature_payload_scopes_unmatched_directional_metrics(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+
+    def paper(title: str, doi: str, phrase: str, endpoint: str) -> dict[str, Any]:
+        return {
+            "title": title,
+            "doi": doi,
+            "year": 2026,
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": "agentic workflow benchmark tasks",
+                "intervention": "agentic workflows",
+                "comparator": "baseline agent system",
+                "endpoint": endpoint,
+            },
+        }
+
+    papers = [
+        paper(
+            "Agentic workflows average improvement evaluation",
+            "10.1234/agentic-average",
+            "agentic workflows improved average improvement by 12 percent",
+            "average improvement",
+        ),
+        paper(
+            "Agentic workflows object retrieval improvement evaluation",
+            "10.1234/agentic-object-retrieval",
+            "agentic workflows improved object retrieval improvement by 9 percent",
+            "object retrieval improvement",
+        ),
+        paper(
+            "Agentic workflows caching efficiency evaluation",
+            "10.1234/agentic-caching",
+            "agentic workflows improved caching efficiency by 7 percent",
+            "caching efficiency",
+        ),
+        paper(
+            "Agentic workflows planning success evaluation",
+            "10.1234/agentic-planning",
+            "agentic workflows improved planning success rate by 5 percent",
+            "planning success rate",
+        ),
+        paper(
+            "Agentic workflows task completion reliability evaluation",
+            "10.1234/agentic-reliability",
+            "agentic workflows improved task completion reliability by 6 percent",
+            "task completion reliability",
+        ),
+    ]
+
+    _candidate, payload = daily._source_literature_payload(
+        profile_slug="ai_research",
+        topic="agentic_workflows",
+        papers=papers,
+        runs_root=root,
+        date="2026-07-05T13-45-00Z",
+    )
+
+    public_text = " ".join((
+        payload["title"],
+        payload["abstract"],
+        payload["markdown"],
+    ))
+    assert payload["title"].startswith(
+        "agentic workflows: source-scope map across ",
+    )
+    assert "average improvement" in payload["title"]
+    assert "object retrieval improvement" in payload["title"]
+    assert "caching efficiency" in payload["title"]
+    assert "direction-bearing map across" not in public_text
+    assert "direction-bearing evidence across" not in public_text
+    assert "maps separate direction-bearing cells" in payload["abstract"]
+    assert "non-poolable metric cells" in payload["abstract"]
+    assert "not one harmonized endpoint" in payload["markdown"]
+    assert "direction-bearing receipts: 5" in payload["markdown"]
 
 
 def test_source_literature_endpoint_label_does_not_promote_topic_as_outcome() -> None:
