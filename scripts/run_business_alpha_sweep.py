@@ -2516,6 +2516,7 @@ def main() -> int:
                     _topic_key(topic), pending_source_lit_topic_keys,
                 )
             ]
+            repair_mode = bool(repairable_source_lit_topics)
             seed_pool = list(dict.fromkeys([*repairable_source_lit_topics, *seed_pool]))
             blocked_topic_keys = _recent_source_literature_blocked_topics(
                 args.runs_root, domain,
@@ -2537,6 +2538,8 @@ def main() -> int:
                 if (
                     seed_key in hard_blocked_topic_keys
                     or (
+                        repair_mode
+                        and
                         seed_key not in blocked_topic_keys
                         and seed_key not in repairable_source_lit_topic_keys
                     )
