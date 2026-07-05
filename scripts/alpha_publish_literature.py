@@ -2465,15 +2465,6 @@ def payload(
         for label in _CONTEXT_ONLY_ROLES
         for endpoint in endpoints_by_label.get(label, [])
     ))
-    context_only_settings = list(dict.fromkeys(
-        setting for paper in selected
-        if _paper_evidence_role(paper, topic, profile.slug) in _CONTEXT_ONLY_ROLES
-        and (setting := _source_context_label(paper, non_bio=non_bio))
-    ))
-    public_context_only_settings = [
-        setting for setting in context_only_settings
-        if title_key(setting) not in {"firm", "firms", "companies", "businesses", "organizations"}
-    ]
     adjacent_context_labels: list[str] = []
     for paper in selected:
         if _paper_evidence_role(paper, topic, profile.slug) not in _CONTEXT_ONLY_ROLES:
@@ -3138,13 +3129,6 @@ def payload(
         endpoint for endpoint in title_directional_endpoints
         if endpoint != primary_duplicated_endpoint
     ]
-    adjacent_context_title = join_contexts(
-        (adjacent_context_labels or public_context_only_settings)[:2],
-    )
-    adjacent_context_tail = (
-        f" with {adjacent_context_title}"
-        if adjacent_context_title else ""
-    )
     antecedent_heavy_title = (
         non_bio and antecedent_count >= 2 and bool(title_antecedent_endpoints)
     )
@@ -3162,7 +3146,6 @@ def payload(
             and title_directional_endpoints and nullish_endpoints
         ) else
         f"{join_contexts(title_directional_endpoints[:3])}"
-        f"{adjacent_context_tail}"
         if context_heavy_non_bio_scope else
         f"{join_contexts(title_directional_endpoints[:3])}"
         if non_bio_nonpoolable_direction_scope else
