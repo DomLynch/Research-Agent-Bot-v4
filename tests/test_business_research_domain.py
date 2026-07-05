@@ -1594,8 +1594,8 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     }) == ["no_source_diverse_bundle", "fullraw_probe_busy"]
 
 
-def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
-    tmp_path: Path, monkeypatch: Any,
+def _assert_fullraw_probe_waits_for_admitted_async(
+    tmp_path: Path, monkeypatch: Any, *, async_status: str, admitted_key: str,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
     import scripts.run_topic_discovery as discovery
@@ -1607,7 +1607,7 @@ def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
     monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_POLL_SECONDS", "0.1")
     monkeypatch.setenv(
         "TOPIC_DISCOVERY_BUSINESS_FULLRAW_LOCK_PATH",
-        str(tmp_path / "fullraw.lock"),
+        str(tmp_path / f"fullraw-{async_status}.lock"),
     )
     monkeypatch.setattr(sweep, "_business_fullraw_queries", lambda _topic: ("firm performance",))
     monkeypatch.setattr(
@@ -1621,17 +1621,16 @@ def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
         if len(calls) == 1:
             topic_discovery_mod._FULLRAW_LAST_RECEIPT = {}
             topic_discovery_mod._FULLRAW_LAST_ASYNC_SWEEP = {
-                "status": "running",
-                "key_running": True,
-                "inflight_count": 1,
-                "max_inflight": 1,
+                "status": async_status,
+                admitted_key: True,
+                "queued_count": 1,
+                "max_queue": 4,
             }
             discovery._FULLRAW_PROBE_EVENTS.append({
                 "query": query,
-                "status": "in_progress_cache_hit",
-                "async_status": "running",
-                "key_running": True,
-                "partial_shard_search": True,
+                "status": "incomplete_receipt",
+                "async_status": async_status,
+                admitted_key: True,
             })
             return []
         topic_discovery_mod._FULLRAW_LAST_RECEIPT = {
@@ -1670,6 +1669,22 @@ def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
     assert result["status"] == "complete"
     assert result["paper_count"] == 5
     assert result["candidate_fact_source_count"] == 5
+
+
+def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    _assert_fullraw_probe_waits_for_admitted_async(
+        tmp_path, monkeypatch, async_status="running", admitted_key="key_running",
+    )
+
+
+def test_business_sweep_fullraw_probe_waits_for_admitted_async_queue(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    _assert_fullraw_probe_waits_for_admitted_async(
+        tmp_path, monkeypatch, async_status="queued", admitted_key="key_queued",
+    )
 
 
 def test_business_sweep_fullraw_backoff_uses_completed_cache_receipt(
@@ -2750,7 +2765,7 @@ def test_business_sweep_fullraw_probe_sheds_unadmitted_full_queue_without_sleep(
     assert result["queue_shed"] is True
 
 
-def test_business_sweep_fullraw_probe_sheds_admitted_pending_key_without_sleep(
+def test_business_sweep_fullraw_probe_bounds_admitted_pending_key_polling(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
     import agent.topic_discovery as topic_discovery_mod
@@ -2798,8 +2813,8 @@ def test_business_sweep_fullraw_probe_sheds_admitted_pending_key_without_sleep(
         include_papers=True,
     )
 
-    assert calls == ["minimum wage performance"]
-    assert sleeps == []
+    assert calls == ["minimum wage performance", "minimum wage performance"]
+    assert sleeps == [15.0]
     assert result["status"] == "incomplete_receipt"
     assert result["queue_waiting"] is True
 

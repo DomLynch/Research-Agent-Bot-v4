@@ -576,6 +576,13 @@ def _strict_fullraw_probe(
                 queue_retry_deadline = (
                     time.monotonic() + _business_fullraw_queue_retry_seconds()
                 )
+                queue_retry_polls = max(
+                    1,
+                    math.ceil(
+                        _business_fullraw_queue_retry_seconds()
+                        / max(poll_seconds, 0.1),
+                    ),
+                )
                 while True:
                     for idx, query in enumerate(queries):
                         attempted.append(query)
@@ -762,7 +769,11 @@ def _strict_fullraw_probe(
                         result.setdefault(
                             "backoff_seconds", _business_fullraw_backoff_seconds(),
                         )
-                        if result.get("key_running") is not True or remaining <= 0:
+                        queue_retry_polls -= 1
+                        if not (
+                            result.get("key_running") is True
+                            or result.get("key_queued") is True
+                        ) or remaining <= 0 or queue_retry_polls <= 0:
                             break
                         time.sleep(min(max(poll_seconds, 0.1), remaining))
                         continue
