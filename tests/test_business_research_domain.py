@@ -1525,6 +1525,22 @@ def test_business_sweep_fullraw_queue_retry_defaults_to_bounded_retry_window(
     assert sweep._business_fullraw_queue_retry_seconds() == 600.0
 
 
+def test_business_fullraw_async_backoff_uses_queue_retry_not_foreground(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_BACKOFF_SECONDS", "3")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS", "1800")
+    monkeypatch.setenv("TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS", "7200")
+
+    ttl = sweep._fullraw_backoff_ttl_seconds({
+        "status": "incomplete_receipt",
+        "async_status": "running",
+        "partial_shard_search": True,
+    })
+
+    assert ttl == 1800
+
+
 def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:

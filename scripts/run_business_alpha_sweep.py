@@ -331,13 +331,16 @@ def _fullraw_backoff_ttl_seconds(event: dict[str, Any]) -> float:
     ttl = _business_fullraw_backoff_seconds()
     status = str(event.get("status") or event.get("previous_status") or "")
     async_status = str(event.get("async_status") or "")
-    if (
-        async_status in {"queued", "running"}
-        or event.get("partial_shard_search") is True
-        or status in {
-            "async_queued", "async_running", "in_progress_cache_hit",
-            "in_progress_poll_due", "incomplete_receipt",
-        }
+    if async_status in {"queued", "running"} or status in {"async_queued", "async_running"}:
+        retry_ttl = _business_fullraw_queue_retry_seconds()
+        if retry_ttl > 0:
+            ttl = max(ttl, retry_ttl)
+        else:
+            with suppress(ValueError):
+                ttl = max(ttl, float(_business_fullraw_foreground_seconds()))
+    elif (
+        event.get("partial_shard_search") is True
+        or status in {"in_progress_cache_hit", "in_progress_poll_due", "incomplete_receipt"}
     ):
         with suppress(ValueError):
             ttl = max(ttl, float(_business_fullraw_foreground_seconds()))
