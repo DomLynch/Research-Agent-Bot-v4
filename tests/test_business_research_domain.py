@@ -1610,7 +1610,10 @@ def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
         str(tmp_path / "fullraw.lock"),
     )
     monkeypatch.setattr(sweep, "_business_fullraw_queries", lambda _topic: ("firm performance",))
-    monkeypatch.setattr(sweep.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(
+        "scripts.run_business_alpha_sweep.time.sleep",
+        lambda seconds: sleeps.append(seconds),
+    )
     discovery._FULLRAW_PROBE_EVENTS.clear()
 
     def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
@@ -6682,6 +6685,52 @@ def test_business_sweep_skips_pending_source_literature_topic(
         "--runs-root", str(runs_root),
         "--submit-after-consistent-passes", "1",
         "--submit-date", "2026-06-30T08-45-00Z",
+    ])
+
+    assert sweep.main() == 2
+    assert fetched_topics == [next_topic]
+
+
+def test_business_sweep_skips_pending_source_literature_family_variant(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    profile = load_domain_profile("business_research")
+    runs_root = tmp_path / "runs"
+    pending_parent = "supply_chain"
+    blocked_variant = "supply_chain_resilience_value"
+    next_topic = "platform_strategy_network"
+    fetched_topics: list[str] = []
+
+    def fake_fetch(topic: str, **_kwargs: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        fetched_topics.append(topic)
+        return [], {"status": "failed"}
+
+    monkeypatch.setattr(sweep, "_DOMAINS", ("business_research",))
+    monkeypatch.setattr(sweep, "load_domain_profile", lambda _domain: profile)
+    monkeypatch.setattr(sweep, "_seed_topics", lambda _path, *, limit: [
+        blocked_variant,
+        next_topic,
+    ])
+    monkeypatch.setattr(sweep, "_prioritized_seed_topics", lambda _root, _domain, topics: topics)
+    monkeypatch.setattr(cycle, "_priority_source_literature_repair_decisions", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(cycle, "_repairable_source_literature_topics", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(cycle, "_pending_source_literature_topics", lambda *_args, **_kwargs: {
+        pending_parent,
+    })
+    monkeypatch.setattr(sweep, "_cached_fullraw_complete_hit_count", lambda _topic: 0)
+    monkeypatch.setattr(sweep, "fetch_business_facts", fake_fetch)
+    monkeypatch.setattr(sweep, "_strict_fullraw_probe", lambda _topic, **_kwargs: {
+        "status": "not_configured",
+    })
+    monkeypatch.setattr(sys, "argv", [
+        "run_business_alpha_sweep.py",
+        "--cycles", "1",
+        "--topics-per-domain", "2",
+        "--domains", "business_research",
+        "--runs-root", str(runs_root),
+        "--submit-after-consistent-passes", "1",
+        "--submit-date", "2026-07-05T17-30-00Z",
     ])
 
     assert sweep.main() == 2

@@ -2512,7 +2512,9 @@ def main() -> int:
             ]))
             repairable_source_lit_topics = [
                 topic for topic in repairable_source_lit_topics
-                if _topic_key(topic) not in pending_source_lit_topic_keys
+                if not publish_cycle._source_literature_family_blocked_topic(
+                    _topic_key(topic), pending_source_lit_topic_keys,
+                )
             ]
             seed_pool = list(dict.fromkeys([*repairable_source_lit_topics, *seed_pool]))
             blocked_topic_keys = _recent_source_literature_blocked_topics(
@@ -2545,7 +2547,9 @@ def main() -> int:
                         seed_key in soft_source_lit_repair_keys
                         or seed_key in reviewer_revise_topic_keys
                     )
-                    and seed_key not in pending_source_lit_topic_keys
+                    and not publish_cycle._source_literature_family_blocked_topic(
+                        seed_key, pending_source_lit_topic_keys,
+                    )
                 )
                 if seed_topic not in priority_source_lit_topics and not soft_repair:
                     continue
@@ -2588,7 +2592,9 @@ def main() -> int:
             fresh_topics: list[str] = []
             for seed_topic in prioritized_topics:
                 seed_key = _topic_key(seed_topic)
-                if seed_key in blocked_topic_keys or seed_key in pending_source_lit_topic_keys:
+                if publish_cycle._source_literature_family_blocked_topic(
+                    seed_key, blocked_topic_keys | pending_source_lit_topic_keys,
+                ):
                     skipped_recent.append(seed_topic)
                     continue
                 fresh_topics.append(seed_topic)
@@ -2627,10 +2633,11 @@ def main() -> int:
                 topic for topic in _cached_source_literature_discovery_topics(
                     args.runs_root, domain, limit=cache_ready_scan_limit,
                 )
-                if (
-                    _topic_key(topic) not in blocked_topic_keys
-                    and _topic_key(topic) not in pending_source_lit_topic_keys
-                    and _topic_key(topic) not in repairable_source_lit_topic_keys
+                if not (
+                    publish_cycle._source_literature_family_blocked_topic(
+                        _topic_key(topic), blocked_topic_keys | pending_source_lit_topic_keys,
+                    )
+                    or _topic_key(topic) in repairable_source_lit_topic_keys
                 )
             ]
             cache_ready_scan_topics = list(dict.fromkeys([
