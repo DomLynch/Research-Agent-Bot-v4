@@ -6615,12 +6615,10 @@ def test_sync_submission_decisions_polls_terminal_resubmit_target_object(
     })
 
     def fetcher(submission_id: str) -> dict[str, Any]:
-        assert submission_id == "object-reviewed"
+        assert submission_id == "queued-job-1"
         return {
-            "status": "complete",
-            "decision": "accept",
+            "status": "pending",
             "seen_id": submission_id,
-            "publication": {"url": "https://researka.org/alpha/object-reviewed"},
         }
 
     summary = daily.sync_submission_decisions(
@@ -6638,17 +6636,17 @@ def test_sync_submission_decisions_polls_terminal_resubmit_target_object(
         (root / "_daily_ledger" / "2026-05-21.json").read_text(encoding="utf-8"),
     )
     assert summary["checked"] == 1
-    assert summary["updated"] == 2
-    assert summary["published"] == 1
-    assert submitted[0]["submission_id"] == "object-reviewed"
+    assert summary["updated"] == 1
+    assert summary["pending"] == 1
+    assert submitted[0]["submission_id"] == "queued-job-1"
     assert submitted[0]["parent_submission_id"] == "parent-submission"
     assert submitted[0]["terminal_resubmit_target_object_id"] == "object-reviewed"
     assert submitted[0]["terminal_resubmit_queued_job_id"] == "queued-job-1"
-    assert promoted["submission_id"] == "object-reviewed"
-    assert promoted["status"] == "published"
-    assert promoted["published"] == 1
-    assert promoted["public_url"] == "https://researka.org/alpha/object-reviewed"
-    assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
+    assert promoted["submission_id"] == "queued-job-1"
+    assert promoted["status"] == "submitted_to_researka"
+    assert promoted["final_verdict"] == "pending"
+    assert promoted["pending_reason"] == "terminal_resubmit_job_queued"
+    assert promoted["researka_decision"]["seen_id"] == "queued-job-1"
 
 
 def test_sync_submission_decisions_records_complete_terminal_resubmit_revise(
@@ -6710,11 +6708,11 @@ def test_sync_submission_decisions_records_complete_terminal_resubmit_revise(
     assert summary["pending"] == 0
     assert summary["updated"] == 2
     assert summary["published"] == 0
-    assert promoted["submission_id"] == "object-reviewed"
+    assert promoted["submission_id"] == "queued-job-1"
     assert promoted["status"] == "reviewer_revise"
     assert promoted["final_verdict"] == "revise"
     assert "pending_reason" not in promoted
-    assert promoted["researka_decision"]["seen_id"] == "object-reviewed"
+    assert promoted["researka_decision"]["seen_id"] == "queued-job-1"
 
 
 def test_sync_submission_decisions_records_revise_as_retryable(tmp_path: Path) -> None:
@@ -14040,7 +14038,7 @@ def test_source_literature_terminal_resubmit_waits_for_queued_target_object(
     assert decision_calls == ["sub-clean-1"]
     assert ledger["status"] == "submitted_to_researka"
     assert ledger["final_verdict"] == "pending"
-    assert ledger["submission_id"] == "sub-clean-2"
+    assert ledger["submission_id"] == "job-clean-2"
     assert [row["status"] for row in ledger["cycle_attempts"]] == [
         "reviewer_revise", "submitted_to_researka",
     ]
@@ -14052,10 +14050,8 @@ def test_source_literature_terminal_resubmit_waits_for_queued_target_object(
         == "job-clean-2"
     )
     assert (
-        ledger["source_literature_fallback_attempts"][0][
-            "terminal_resubmit_poll_object_id"
-        ]
-        == "sub-clean-2"
+        "terminal_resubmit_poll_object_id"
+        not in ledger["source_literature_fallback_attempts"][0]
     )
 
 
