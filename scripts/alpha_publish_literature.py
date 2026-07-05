@@ -2341,6 +2341,12 @@ def payload(
                 "directional role, but the same receipt includes a null/mixed "
                 f"subdimension ({_short_finding(phrase, 140)}).",
             )
+        if non_bio and role in _CONTEXT_ONLY_ROLES:
+            lines.append(
+                "  - Topic-overlap rationale: retained as adjacent scope because "
+                "the source fact overlaps the topic/exposure terms, but its metric "
+                "is not direction-bearing support for the title claim.",
+            )
         for label, key in (
             ("Population/setting" if non_bio else "Population", "population"),
             ("Policy/exposure/practice" if non_bio else "Intervention/exposure", "intervention"),
@@ -2376,7 +2382,7 @@ def payload(
             item["endpoint"] = endpoint
             if isinstance(item.get("source_fact"), dict):
                 item["source_fact"] = dict(item["source_fact"]) | {"endpoint": endpoint}
-        item["source_role"] = role
+        item["source_role"] = _memo_role_label(role, profile.slug)
         item["source_type"] = item.get("evidence_type") or evidence_type(paper)
         finding = _display_finding(bundle_fact, _paper_effect_direction(paper, topic))
         if finding:
@@ -2459,6 +2465,15 @@ def payload(
         for label in _CONTEXT_ONLY_ROLES
         for endpoint in endpoints_by_label.get(label, [])
     ))
+    context_only_settings = list(dict.fromkeys(
+        setting for paper in selected
+        if _paper_evidence_role(paper, topic, profile.slug) in _CONTEXT_ONLY_ROLES
+        and (setting := _source_context_label(paper, non_bio=non_bio))
+    ))
+    public_context_only_settings = [
+        setting for setting in context_only_settings
+        if title_key(setting) not in {"firm", "firms", "companies", "businesses", "organizations"}
+    ]
     directional_endpoint_counts = {
         endpoint: directional_endpoint_rows.count(endpoint)
         for endpoint in dict.fromkeys(directional_endpoint_rows)
@@ -2833,8 +2848,20 @@ def payload(
             "or market-generalized claim is made."
         )
     moderator_note = _specific_moderator_note(facts, source_types)
+    gap_facts: list[Json] = []
+    for paper in selected:
+        if (
+            _paper_evidence_role(paper, topic, profile.slug)
+            not in (_DIRECTIONAL_SOURCE_LIT_ROLES | {"null/mixed", "null/non-convergent"})
+        ):
+            continue
+        raw_gap_fact = paper.get("source_fact")
+        if isinstance(raw_gap_fact, dict):
+            gap_facts.append(raw_gap_fact)
+    if not gap_facts:
+        gap_facts = facts
     next_gaps = [
-        _pico_gap(facts, profile.slug),
+        _pico_gap(gap_facts, profile.slug),
         (
             f"If {topic_label} is promoted beyond a scoping note, the next run should "
             f"select sources sharing one context family rather than spanning {context_text}."
@@ -3092,6 +3119,11 @@ def payload(
         endpoint for endpoint in title_directional_endpoints
         if endpoint != primary_duplicated_endpoint
     ]
+    adjacent_context_title = join_contexts(public_context_only_settings[:2])
+    adjacent_context_tail = (
+        f" plus adjacent {adjacent_context_title} context"
+        if adjacent_context_title else ""
+    )
     antecedent_heavy_title = (
         non_bio and antecedent_count >= 2 and bool(title_antecedent_endpoints)
     )
@@ -3109,6 +3141,7 @@ def payload(
             and title_directional_endpoints and nullish_endpoints
         ) else
         f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
+        f"{adjacent_context_tail}"
         if context_heavy_non_bio_scope else
         f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
         if non_bio_nonpoolable_direction_scope else

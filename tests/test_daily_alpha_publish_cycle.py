@@ -17656,7 +17656,7 @@ def test_source_literature_payload_does_not_overclaim_context_only_receipts(
     ))
     assert payload["title"] == (
         "digital transformation: source-scope map across firm environmental "
-        "performance and firm profitability receipts"
+        "performance and firm profitability receipts plus adjacent banking firms context"
     )
     assert "direction-bearing map across" not in public_text
     assert "direction-bearing evidence across" not in public_text
@@ -18543,6 +18543,7 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert payload["abstract"].startswith(
         "digital transformation: Source-scope map:",
     )
+    assert "plus adjacent banking firms context" in payload["title"]
     assert "direction-bearing evidence across" not in payload["abstract"]
     assert "not a comparator claim" in payload["abstract"]
     assert "This receipt-backed scoping note" not in payload["abstract"]
@@ -18568,6 +18569,13 @@ def test_source_literature_payload_collapses_business_context_rows(
         "| competitive advantage | Digital transformation: harnessing digital "
         "technologies"
     ) in markdown
+    assert "Topic-overlap rationale: retained as adjacent scope" in markdown
+    banking_source = next(
+        source for source in source_bundle
+        if "harnessing digital technologies" in str(source.get("title") or "")
+    )
+    assert banking_source["source_role"] == "context-only receipt"
+    assert "hold metric=competitive advantage constant" not in markdown
     assert "primary; 2019" in markdown
     assert "Publication-year audit" not in markdown
 
@@ -18662,7 +18670,7 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
     ))
     assert payload["title"] == (
         "digital transformation: source-scope map across environmental "
-        "performance and firm performance receipts"
+        "performance and firm performance receipts plus adjacent banking firms context"
     )
     assert "comparator outcomes" not in public_text
     assert "Bounded research signal" not in public_text
@@ -18670,6 +18678,7 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
     assert "not a comparator claim" in payload["abstract"]
     assert "direction-bearing receipts: 3" in payload["markdown"]
     assert "context/antecedent/model receipts: 2 excluded from effect support" in payload["markdown"]
+    assert "Topic-overlap rationale: retained as adjacent scope" in payload["markdown"]
 
 
 def test_source_literature_payload_scopes_unmatched_directional_metrics(
