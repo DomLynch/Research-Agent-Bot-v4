@@ -17651,10 +17651,11 @@ def test_source_literature_payload_does_not_overclaim_context_only_receipts(
         payload["markdown"],
     ))
     assert payload["title"] == (
-        "source-scope map of digital transformation: firm environmental "
-        "performance and firm profitability metric families plus adjacent big data "
-        "capability in banking firms context"
+        "digital transformation: firm environmental performance and firm profitability "
+        "with big data capability in banking firms"
     )
+    assert "source-scope map" not in payload["title"]
+    assert "metric families" not in payload["title"]
     assert "direction-bearing map across" not in public_text
     assert "direction-bearing evidence across" not in public_text
     assert "has separate direction-bearing receipts for" not in public_text
@@ -17736,9 +17737,7 @@ def test_source_literature_payload_reconciles_single_outcome_economics_roles(
     )
 
     markdown = payload["markdown"]
-    assert payload["title"] == (
-        "minimum wage employment: within-employment effects heterogeneity map across 5 sources"
-    )
+    assert payload["title"] == "minimum wage employment: within-employment effects heterogeneity"
     assert len(payload["source_bundle"]) == 5
     assert payload["evidence_bundle"]["direct_source_count"] == 5
     assert "multi-outcome boundary map" not in markdown
@@ -18541,7 +18540,8 @@ def test_source_literature_payload_collapses_business_context_rows(
     assert payload["abstract"].startswith(
         "digital transformation: Source-scope map:",
     )
-    assert "plus adjacent use of big data in banking firms context" in payload["title"]
+    assert "with use of big data in banking firms" in payload["title"]
+    assert "source-scope map" not in payload["title"]
     assert "direction-bearing evidence across" not in payload["abstract"]
     assert "not a comparator claim" in payload["abstract"]
     assert "This receipt-backed scoping note" not in payload["abstract"]
@@ -18667,10 +18667,11 @@ def test_source_literature_payload_scopes_three_directional_two_context_rows(
         payload["markdown"],
     ))
     assert payload["title"] == (
-        "source-scope map of digital transformation: environmental performance "
-        "and firm performance metric families plus adjacent big data capability "
-        "in banking firms context"
+        "digital transformation: environmental performance and firm performance "
+        "with big data capability in banking firms"
     )
+    assert "source-scope map" not in payload["title"]
+    assert "metric families" not in payload["title"]
     assert "comparator outcomes" not in public_text
     assert "Bounded research signal" not in public_text
     assert "has separate direction-bearing receipts for" not in public_text
@@ -18747,9 +18748,9 @@ def test_source_literature_payload_scopes_unmatched_directional_metrics(
         payload["abstract"],
         payload["markdown"],
     ))
-    assert payload["title"].startswith(
-        "agentic workflows: source-scope map across ",
-    )
+    assert payload["title"].startswith("agentic workflows: average improvement")
+    assert "source-scope map" not in payload["title"]
+    assert "receipts" not in payload["title"]
     assert "average improvement" in payload["title"]
     assert "object retrieval improvement" in payload["title"]
     assert "caching efficiency" in payload["title"]

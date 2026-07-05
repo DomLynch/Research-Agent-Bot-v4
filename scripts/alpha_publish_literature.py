@@ -3142,7 +3142,7 @@ def payload(
         (adjacent_context_labels or public_context_only_settings)[:2],
     )
     adjacent_context_tail = (
-        f" plus adjacent {adjacent_context_title} context"
+        f" with {adjacent_context_title}"
         if adjacent_context_title else ""
     )
     antecedent_heavy_title = (
@@ -3161,18 +3161,15 @@ def payload(
             non_bio and multi_display_outcome and context_only_count
             and title_directional_endpoints and nullish_endpoints
         ) else
-        f"{join_contexts(title_directional_endpoints[:3])} metric families"
+        f"{join_contexts(title_directional_endpoints[:3])}"
         f"{adjacent_context_tail}"
         if context_heavy_non_bio_scope else
-        f"source-scope map across {join_contexts(title_directional_endpoints[:3])} receipts"
+        f"{join_contexts(title_directional_endpoints[:3])}"
         if non_bio_nonpoolable_direction_scope else
         (
-            f"{len(bundle)}-source map: "
-            f"{directional_endpoint_counts.get(primary_duplicated_endpoint, directional_count)} "
-            f"direction-bearing {primary_duplicated_endpoint} receipt(s) plus "
-            f"{nullish_count} null/mixed {single_caveat_endpoint} receipt(s)"
+            f"{primary_duplicated_endpoint} with {single_caveat_endpoint}"
             + (
-                f" plus {context_only_count} context/model receipt(s) excluded from effect support"
+                f" and {context_only_count} context/model receipt(s) excluded from effect support"
                 if context_only_count else ""
             )
         )
@@ -3182,31 +3179,25 @@ def payload(
         ) else
         f"{primary_duplicated_endpoint} with {join_contexts(comparator_title_endpoints[:3])} comparator outcomes"
         if non_bio and primary_duplicated_endpoint and comparator_title_endpoints else
-        f"within-{display_outcome_families[0]} heterogeneity map across {len(bundle)} sources"
+        f"within-{display_outcome_families[0]} heterogeneity"
         if non_bio and len(display_outcome_families) == 1 else
-        f"{len(bundle)}-source map: {directional_count} direction-bearing "
-        f"{join_contexts(title_directional_endpoints)} receipt(s) plus "
-        f"{nullish_count} null/mixed {join_contexts(nullish_endpoints[:2])} receipt(s)"
+        f"{join_contexts(title_directional_endpoints)} with {join_contexts(nullish_endpoints[:2])}"
         if non_bio and title_directional_endpoints and nullish_endpoints else
         f"non-poolable direction-bearing cells for {join_contexts(title_directional_endpoints)}"
         if non_bio and len(title_directional_endpoints) > 1 and context_only_count else
-        f"direction-bearing map across {join_contexts(title_directional_endpoints)} receipts"
+        f"{join_contexts(title_directional_endpoints)}"
         if non_bio and len(title_directional_endpoints) > 1 else
-        f"boundary map across {join_contexts(display_outcome_families[:3])} receipts"
+        f"{join_contexts(display_outcome_families[:3])}"
         if multi_display_outcome else
         "separated intervention and predictive evidence fronts"
         if split_front and not non_bio else
         "separated policy/exposure and predictive evidence fronts"
         if split_front else
-        "evidence-base boundary map across receipts"
+        "evidence-base boundary"
         if non_bio and non_bio_signal_parts else
         "one bounded, context-dependent signal across receipts"
     )
-    generated_title = (
-        f"source-scope map of {title_topic_label}: {title_tail}"
-        if non_bio and context_heavy_non_bio_scope else
-        f"{title_topic_label}: {title_tail}"
-    )
+    generated_title = f"{title_topic_label}: {title_tail}"
     if non_bio and _source_title_alignment_needed(
         requested_topic, generated_title, topic_label, selected,
     ):
