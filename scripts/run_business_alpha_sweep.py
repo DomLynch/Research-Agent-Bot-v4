@@ -2521,6 +2521,9 @@ def main() -> int:
             blocked_topic_keys = _recent_source_literature_blocked_topics(
                 args.runs_root, domain,
             )
+            selection_blocked_topic_keys = blocked_topic_keys - (
+                soft_source_lit_repair_keys | reviewer_revise_topic_keys
+            )
             hard_blocked_topic_keys = _hard_source_literature_blocked_topic_keys(
                 args.runs_root, domain,
             )
@@ -2596,7 +2599,7 @@ def main() -> int:
             for seed_topic in prioritized_topics:
                 seed_key = _topic_key(seed_topic)
                 if publish_cycle._source_literature_family_blocked_topic(
-                    seed_key, blocked_topic_keys | pending_source_lit_topic_keys,
+                    seed_key, selection_blocked_topic_keys | pending_source_lit_topic_keys,
                 ):
                     skipped_recent.append(seed_topic)
                     continue
@@ -2638,7 +2641,8 @@ def main() -> int:
                 )
                 if not (
                     publish_cycle._source_literature_family_blocked_topic(
-                        _topic_key(topic), blocked_topic_keys | pending_source_lit_topic_keys,
+                        _topic_key(topic),
+                        selection_blocked_topic_keys | pending_source_lit_topic_keys,
                     )
                     or _topic_key(topic) in repairable_source_lit_topic_keys
                 )
