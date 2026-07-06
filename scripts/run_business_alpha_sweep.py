@@ -2388,10 +2388,6 @@ def _write_sweep_end_summary(
     return path
 
 
-def _waiting_for_fullraw_completion(rows: list[dict[str, Any]]) -> bool:
-    return any("fullraw_probe_busy" in (row.get("blockers") or ()) for row in rows)
-
-
 def _bundle_fingerprint(bundle: Any) -> str:
     return "|".join((
         str(bundle.domain),
@@ -3379,7 +3375,7 @@ def main() -> int:
         file=sys.stderr,
         flush=True,
     )
-    return 1 if _waiting_for_fullraw_completion(rows) else 2
+    return 2
 
 
 if __name__ == "__main__":

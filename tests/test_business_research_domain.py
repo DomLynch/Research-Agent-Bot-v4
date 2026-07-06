@@ -1195,7 +1195,7 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
         "--submit-date", "2026-06-26T03-00-00Z",
     ])
 
-    assert sweep.main() == 1
+    assert sweep.main() == 2
     diagnostic = json.loads(
         (tmp_path / "runs" / "_business_diagnostics" / "business_research-pricing_strategy_margin.json").read_text(
             encoding="utf-8",
@@ -3632,7 +3632,7 @@ def test_business_sweep_continues_after_running_fullraw_probe(
         "--runs-root", str(tmp_path / "runs"),
     ])
 
-    assert sweep.main() == 1
+    assert sweep.main() == 2
     assert probed_topics == [
         "platform_strategy_network_effects",
         "management_practices_productivity",
@@ -4200,7 +4200,7 @@ def test_business_sweep_keeps_cached_facts_when_live_fullraw_is_busy(
         "--submit-date", "2026-06-29T04-35-00Z",
     ])
 
-    assert sweep.main() == 1
+    assert sweep.main() == 2
     assert submissions == []
 
     summary = json.loads(
@@ -7758,7 +7758,7 @@ def test_business_sweep_bounds_cached_fullraw_ranking_before_selection(
         "--submit-date", "2026-06-30T02-05-00Z",
     ])
 
-    assert sweep.main() == 1
+    assert sweep.main() == 2
     assert cache_calls == topics[:3]
 
 
@@ -7805,7 +7805,7 @@ def test_business_sweep_diversifies_fullraw_probe_families_before_selection(
         "--submit-date", "2026-07-02T02-30-00Z",
     ])
 
-    assert sweep.main() == 1
+    assert sweep.main() == 2
     assert fullraw_calls == [
         "platform_strategy_network_sales",
         "inventory_visibility_performance",
