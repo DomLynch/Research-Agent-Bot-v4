@@ -10568,6 +10568,10 @@ def test_business_systemd_timers_are_eight_hour_guarded() -> None:
         assert "Environment=TOPIC_DISCOVERY_BUSINESS_FULLRAW_FOREGROUND_SECONDS=" not in service
         assert "Environment=TOPIC_DISCOVERY_V5_SWEEP_WAIT_SECONDS=" not in service
         assert "Environment=V5_MEMO_FULL_RAW_SEARCH_BUDGET_SECONDS=" not in service
+        assert "RestartPreventExitStatus=2 124" in service
+        if name == "business":
+            assert "Environment=BUSINESS_SWEEP_HEARTBEAT_SECONDS=60" in service
+            assert "Environment=BUSINESS_SWEEP_IDLE_TIMEOUT_SECONDS=900" in service
         assert "Environment=V5_MEMO_FULL_RAW_FOREGROUND_SWEEP_WAIT_SECONDS=" not in service
         assert "TimeoutStartSec=7200" in service
         assert f"OnCalendar=*-*-* {schedule}" in timer

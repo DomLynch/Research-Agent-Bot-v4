@@ -12,6 +12,7 @@ import os
 import re
 import signal
 import sys
+import threading
 import time
 import tomllib
 import urllib.error
@@ -82,6 +83,8 @@ _BUSINESS_FULLRAW_BACKOFF_SECONDS = "180"
 _BUSINESS_FULLRAW_ADVANCE_MAX_SECONDS = "60"
 _BUSINESS_FULLRAW_QUEUE_RETRY_SECONDS = "600"
 _BUSINESS_FULLRAW_CACHE_PROBE_TIMEOUT_SECONDS = "2"
+_BUSINESS_SWEEP_HEARTBEAT_SECONDS = "0"
+_BUSINESS_SWEEP_IDLE_TIMEOUT_SECONDS = "0"
 _FULLRAW_ENV_ALIASES = {
     "V5_MEMO_FULL_RAW_CORPUS_SEARCH_URL": ("RESEARKA_FULLRAW_SEARCH_URL",),
     "V5_MEMO_FULL_RAW_INDEX_TOKEN": (
@@ -102,6 +105,61 @@ _FULLRAW_ENV_ALIASES = {
 _NON_BUSINESS_QUERY_SUFFIXES = (
     "_intervention", "_supplementation", "_therapy", "_treatment",
 )
+
+
+class _SweepHeartbeat:
+    def __init__(self, *, interval_seconds: float, idle_timeout_seconds: float) -> None:
+        self._interval = max(0.0, interval_seconds)
+        self._idle_timeout = max(0.0, idle_timeout_seconds)
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._stage = "starting"
+        self._last = time.monotonic()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        if self._interval <= 0 and self._idle_timeout <= 0:
+            return
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+
+    def beat(self, stage: str) -> None:
+        with self._lock:
+            self._stage = stage
+            self._last = time.monotonic()
+        print(f"[business-sweep] heartbeat stage={stage}", flush=True)
+
+    def _run(self) -> None:
+        interval = self._interval or min(self._idle_timeout, 60.0) or 60.0
+        while not self._stop.wait(interval):
+            now = time.monotonic()
+            with self._lock:
+                idle = now - self._last
+                stage = self._stage
+            print(
+                f"[business-sweep] heartbeat stage={stage} idle_seconds={int(idle)}",
+                flush=True,
+            )
+            if self._idle_timeout > 0 and idle >= self._idle_timeout:
+                print(
+                    "[business-sweep] idle_timeout "
+                    f"stage={stage} idle_seconds={int(idle)}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                os._exit(124)
+
+
+def _float_env(name: str, default: str) -> float:
+    try:
+        return float(os.environ.get(name) or default)
+    except ValueError:
+        return float(default)
 
 
 def _seed_tokens(value: str) -> set[str]:
@@ -2453,8 +2511,21 @@ def main() -> int:
     settings = load_settings()
     rows: list[dict[str, Any]] = []
     domains = _selected_domains(args.domains)
+    heartbeat = _SweepHeartbeat(
+        interval_seconds=_float_env(
+            "BUSINESS_SWEEP_HEARTBEAT_SECONDS",
+            _BUSINESS_SWEEP_HEARTBEAT_SECONDS,
+        ),
+        idle_timeout_seconds=_float_env(
+            "BUSINESS_SWEEP_IDLE_TIMEOUT_SECONDS",
+            _BUSINESS_SWEEP_IDLE_TIMEOUT_SECONDS,
+        ),
+    )
+    heartbeat.start()
     for cycle in range(max(1, args.cycles)):
+        heartbeat.beat(f"cycle_{cycle + 1}_start")
         for domain in domains:
+            heartbeat.beat(f"domain_start:{domain}")
             profile = load_domain_profile(domain)
             if profile.slug not in BUSINESS_DOMAINS:
                 continue
@@ -2462,6 +2533,7 @@ def main() -> int:
                 profile.seed_topics_path,
                 limit=max(args.topics_per_domain, args.topics_per_domain * 8),
             )
+            heartbeat.beat(f"seed_pool_loaded:{domain}")
             priority_source_lit_topics = list(
                 publish_cycle._priority_source_literature_repair_decisions(
                     args.runs_root, domain, limit=max(args.topics_per_domain, 3),
@@ -2516,6 +2588,7 @@ def main() -> int:
             reviewer_revise_topic_keys = _recent_reviewer_revise_submission_topic_keys(
                 args.runs_root, domain,
             )
+            heartbeat.beat(f"repair_topics_loaded:{domain}")
             repairable_source_lit_topics = list(dict.fromkeys([
                 *priority_source_lit_topics,
                 *repairable_source_lit_topics,
@@ -2696,6 +2769,7 @@ def main() -> int:
                 *cached_ready_fresh_topics,
                 *ranked_topics,
             ]))[:selected_limit]
+            heartbeat.beat(f"selected_topics:{domain}:{len(selected_topics)}")
             if skipped_recent:
                 print(
                     "[business-sweep] skipped_recent_source_literature_topics "
@@ -2708,6 +2782,7 @@ def main() -> int:
             while topic_idx < len(selected_topics):
                 topic = selected_topics[topic_idx]
                 topic_idx += 1
+                heartbeat.beat(f"topic_start:{domain}:{topic}")
                 if _topic_key(topic) in source_lit_attempted_topic_keys:
                     continue
                 cached_repair_papers: list[dict[str, Any]] = []

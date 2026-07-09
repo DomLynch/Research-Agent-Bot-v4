@@ -16,4 +16,4 @@ TimeoutStartSec=7200
 # Retry infra interruptions, but keep deliberate no-publish exit 2 red.
 Restart=on-failure
 RestartSec=60
-RestartPreventExitStatus=2
+RestartPreventExitStatus=2 124

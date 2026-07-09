@@ -7,5 +7,6 @@ WorkingDirectory=/root/Research-Agent-Bot-v4
 EnvironmentFile=/root/Research-Agent-Bot-v4/.env
 EnvironmentFile=/etc/researka-agent-v4.env
 Environment=RESEARKA_DATABASE_URL=http://127.0.0.1:8810
+ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/alpha_publish_watchdog.py --runs-root runs --warn-gap-hours 24 --max-publish-gap-hours 48 --fullraw-health-url http://127.0.0.1:9924/health --fullraw-stuck-minutes 45 --restart-fullraw-service researka-v4-fullraw-search.service
 ExecStart=/root/Research-Agent-Bot-v4/.venv/bin/python scripts/check_alpha_publish_health.py --domains longevity_research,ai_research,business_research,management_research,economics_research,finance_research,marketing_research --expect-published --check-url --sync-pending-decisions --show-next-candidate --write-summary --max-age-minutes 540
 TimeoutStartSec=300
