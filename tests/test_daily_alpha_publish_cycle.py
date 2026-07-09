@@ -858,6 +858,55 @@ def test_refresh_cycle_uses_cached_domain_queue_before_full_build(
     assert ledger["status"] == "no_fresh_candidate"
 
 
+def test_refresh_cycle_probes_cached_repair_queue_rows(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo" / "runs"
+    root.mkdir(parents=True)
+    repair = _verdict("agentic_workflows") | {
+        "decision": "agent_repair_needed",
+        "domain": {"slug": "ai_research"},
+    }
+    daily._write_json(root / "_publish_queue.ai_research.json", {
+        "ready_to_publish": [],
+        "agent_repair_needed": [repair],
+        "curation_needed": [],
+        "not_ready": [],
+    })
+    fetched_topics: list[str] = []
+
+    def fail_build_queue(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("initial probe should use cached domain queue")
+
+    def fail_repairable_scan(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
+        raise AssertionError("cached row probes should not scan repairable ledgers")
+
+    monkeypatch.setattr(daily, "_build_queue", fail_build_queue)
+    monkeypatch.setattr(daily, "_repairable_candidate_verdicts", fail_repairable_scan)
+    monkeypatch.setattr(daily, "_refresh_candidate_batch", lambda *_args, **_kwargs: {
+        "ok": False, "note": "bounded test stop",
+    })
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-07-09T17-30-00Z",
+        domain="ai_research",
+        refresh_candidates=True,
+        max_refresh_batches=1,
+        queue_builder=daily._build_queue,
+        submit=True,
+        source_paper_fetcher=lambda topic, _limit: fetched_topics.append(topic) or [],
+        submitter=lambda _payload: {"ok": True, "status": 200},
+        retraction_mode="metadata",
+    )
+
+    assert ledger["initial_queue_probe_source"] == "cached_domain_queue"
+    assert ledger["initial_source_lit_repair_scan"] == "cached_queue_rows"
+    assert ledger["source_literature_preflight_attempts"][0]["topic"] == "agentic_workflows"
+    assert fetched_topics[0] == "agentic_workflows"
+    assert ledger["status"] == "no_fresh_candidate"
+
+
 def test_refresh_cycle_probes_existing_ready_queue_before_discovery(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

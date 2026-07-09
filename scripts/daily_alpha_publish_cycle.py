@@ -6799,6 +6799,14 @@ def run_cycle(
         cached_initial_probe = (
             ledger.get("initial_queue_probe_source") == "cached_domain_queue"
         )
+        cached_repair_rows = (
+            cached_initial_probe
+            and any(
+                isinstance(candidate_queue.get(bucket), list)
+                and bool(candidate_queue.get(bucket))
+                for bucket in ("agent_repair_needed", "curation_needed", "not_ready")
+            )
+        )
         if submit:
             source_lit_probe = source_paper_fetcher or (
                 lambda topic, limit: (
@@ -6808,7 +6816,10 @@ def run_cycle(
                 )
             )
             if cached_initial_probe:
-                ledger["initial_source_lit_repair_scan"] = "skipped_cached_domain_queue"
+                ledger["initial_source_lit_repair_scan"] = (
+                    "cached_queue_rows" if cached_repair_rows
+                    else "skipped_cached_domain_queue"
+                )
                 ledger["initial_source_lit_topic_source"] = "cached_domain_queue"
             source_lit_probe_topics = [] if cached_initial_probe else list(
                 _priority_source_literature_repair_decisions(
