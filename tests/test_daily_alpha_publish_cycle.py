@@ -10116,6 +10116,11 @@ def test_source_literature_reuses_fullraw_metadata_but_does_not_submit_without_f
         "_fetch_source_literature_papers",
         lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("refetched")),
     )
+    monkeypatch.setattr(
+        daily,
+        "_refresh_candidate_batch",
+        lambda *_a, **_k: {"ok": True, "top": 5, "ran_topics": []},
+    )
     submitted = {"called": False}
 
     ledger = daily.run_cycle(
