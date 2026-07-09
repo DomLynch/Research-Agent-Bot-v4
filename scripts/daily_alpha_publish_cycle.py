@@ -5476,7 +5476,7 @@ def _source_literature_queue_topics(
     seed_scope = _seed_scope_tokens(_domain_seed_prefixes(profile_slug))
     topics: list[str] = []
     seen: set[str] = set(seen_topics or set())
-    for bucket in ("not_ready", "curation_needed", "agent_repair_needed"):
+    for bucket in ("agent_repair_needed", "not_ready", "curation_needed"):
         rows = queue.get(bucket)
         if not isinstance(rows, list):
             continue

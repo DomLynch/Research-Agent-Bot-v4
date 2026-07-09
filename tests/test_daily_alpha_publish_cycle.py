@@ -867,10 +867,16 @@ def test_refresh_cycle_probes_cached_repair_queue_rows(
         "decision": "agent_repair_needed",
         "domain": {"slug": "ai_research"},
     }
+    stale_curation = _verdict("exercise") | {
+        "decision": "curation_needed",
+        "domain": {"slug": "ai_research"},
+        "queue_status": "duplicate_submission_fingerprint",
+        "blockers": ["duplicate_submission_fingerprint"],
+    }
     daily._write_json(root / "_publish_queue.ai_research.json", {
         "ready_to_publish": [],
         "agent_repair_needed": [repair],
-        "curation_needed": [],
+        "curation_needed": [stale_curation],
         "not_ready": [],
     })
     fetched_topics: list[str] = []
