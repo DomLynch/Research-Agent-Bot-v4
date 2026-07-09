@@ -6800,6 +6800,7 @@ def run_cycle(
     preflight_queue = None
     initial_probe_empty = False
     skip_refresh_note = "skipped_after_repairable_submission"
+    source_lit_available = False
     source_lit_preflight_papers: dict[str, list[Json]] = {}
     source_lit_preflight_selected: list[str] = []
     if refresh_candidates and queue is None and queue_builder is _build_queue:
@@ -6811,7 +6812,6 @@ def run_cycle(
             candidate_queue = _with_repairable_candidates(
                 candidate_queue, runs_root, profile.slug,
             )
-        source_lit_available = False
         source_lit_probe_attempts: list[Json] = []
         cached_initial_probe = (
             ledger.get("initial_queue_probe_source") == "cached_domain_queue"
@@ -7152,7 +7152,10 @@ def run_cycle(
             1 for row in all_considered if row.get("family_blocked")
         )
         if candidate is None:
-            if refresh.get("note") == "skipped_source_literature_candidate_available":
+            if (
+                source_lit_available
+                or refresh.get("note") == "skipped_source_literature_candidate_available"
+            ):
                 ledger["refresh_early_exit"] = {
                     "batch": batch,
                     "reason": "source_literature_candidate_available",

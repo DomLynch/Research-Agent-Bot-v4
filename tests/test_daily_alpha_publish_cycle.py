@@ -9825,6 +9825,76 @@ def test_source_literature_candidate_skips_refresh_before_submit(
     assert ledger["submitted_topic"] == "glycation_AGEs"
 
 
+def test_source_literature_preflight_survives_stale_queue_probe(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "glycation_AGEs", "paper_count": 10, "fact_source_count": 10}],
+    })
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/gly-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"glycation AGE boundary finding {idx}",
+                "population": "adults",
+                "intervention": "glycation biology",
+                "endpoint": "aging endpoint",
+            },
+        }
+        for idx, title in enumerate((
+            "AGE-RAGE signalling and skin collagen aging",
+            "Glycation stress and RAGE activation in vascular aging",
+            "Collagen crosslinking in advanced glycation biology",
+            "RAGE pathways in age-related tissue injury",
+            "Glycation-derived collagen stiffening review",
+        ))
+    ]
+    select_calls = {"n": 0}
+
+    def stale_select(*_args: Any, **_kwargs: Any) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+        select_calls["n"] += 1
+        if select_calls["n"] == 1:
+            return {"decision": "ready_to_publish", "topic": "stale"}, []
+        return None, [{"topic": "stale", "status": "cycle_exhausted_topic"}]
+
+    monkeypatch.setattr(daily, "select_candidate", stale_select)
+    monkeypatch.setattr(
+        daily,
+        "_refresh_candidate_batch",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("refreshed")),
+    )
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-09T18-31-00Z",
+        domain="longevity_research",
+        refresh_candidates=True,
+        submit=True,
+        source_paper_fetcher=lambda *_args, **_kwargs: papers,
+        submitter=lambda _payload: {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": "sub-1"}},
+        },
+        decision_fetcher=lambda _submission_id: {
+            "status": "complete",
+            "decision": "accept",
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["refresh_batches"][0]["note"] == "skipped_initial_queue_probe"
+    assert ledger["refresh_early_exit"]["reason"] == "source_literature_candidate_available"
+    assert ledger["status"] == "published"
+    assert ledger["submitted_topic"] == "glycation_AGEs"
+
+
 def test_source_literature_candidate_fetches_when_cached_sources_are_metadata_only(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
