@@ -7580,7 +7580,7 @@ def run_cycle(
             runs_root, profile.slug, min_submit_sources, source_literature_blocked_topics,
             limit=source_lit_scan_limit,
         )
-        fresh_topics = [
+        fresh_topics = [] if source_lit_preflight_selected else [
             topic for topic in _source_literature_topic_candidates(
                 runs_root, profile.slug, min_submit_sources,
                 source_literature_blocked_topics,
@@ -7589,7 +7589,7 @@ def run_cycle(
             ) if topic not in repair_topic_set
         ]
         blocked_parent_variant_topics = (
-            [] if fresh_topics else
+            [] if fresh_topics or source_lit_preflight_selected else
             _source_literature_blocked_parent_variant_topics(
                 runs_root,
                 profile.slug,

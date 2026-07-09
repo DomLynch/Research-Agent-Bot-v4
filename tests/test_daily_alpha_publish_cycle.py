@@ -9861,7 +9861,17 @@ def test_source_literature_preflight_survives_stale_queue_probe(
             return {"decision": "ready_to_publish", "topic": "stale"}, []
         return None, [{"topic": "stale", "status": "cycle_exhausted_topic"}]
 
+    topic_scan_calls = {"n": 0}
+    original_topic_candidates = daily._source_literature_topic_candidates
+
+    def topic_candidates(*args: Any, **kwargs: Any) -> list[str]:
+        topic_scan_calls["n"] += 1
+        if topic_scan_calls["n"] > 1:
+            raise AssertionError("rescanned after source-lit preflight")
+        return original_topic_candidates(*args, **kwargs)
+
     monkeypatch.setattr(daily, "select_candidate", stale_select)
+    monkeypatch.setattr(daily, "_source_literature_topic_candidates", topic_candidates)
     monkeypatch.setattr(
         daily,
         "_refresh_candidate_batch",
@@ -9893,6 +9903,7 @@ def test_source_literature_preflight_survives_stale_queue_probe(
     assert ledger["refresh_early_exit"]["reason"] == "source_literature_candidate_available"
     assert ledger["status"] == "published"
     assert ledger["submitted_topic"] == "glycation_AGEs"
+    assert topic_scan_calls["n"] == 1
 
 
 def test_source_literature_candidate_fetches_when_cached_sources_are_metadata_only(
