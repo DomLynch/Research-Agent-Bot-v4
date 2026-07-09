@@ -5413,23 +5413,40 @@ def _source_literature_candidate_papers(
     runs_root: Path, profile_slug: str, topic: str, min_sources: int, fetch_limit: int,
     *, allow_live_fetch: bool = True,
 ) -> list[Json]:
+    fallback: list[Json] = []
+
+    def publishable(papers: list[Json]) -> list[Json]:
+        ok, _reason = _source_literature_boundary_quality(
+            topic, papers, min_sources, profile_slug,
+            require_substantive_sources=True,
+        )
+        return papers if ok else []
+
     papers = _source_literature_discovery_papers(
         runs_root, profile_slug, topic, min_sources,
     )
-    if papers and _source_literature_boundary_quality(
-        topic, papers, min_sources, profile_slug,
-        require_substantive_sources=_source_literature_fallback_submit_enabled(),
-    )[0]:
+    if papers and publishable(papers):
         return papers
+    if papers:
+        fallback = papers
+        if (
+            not _source_literature_fallback_submit_enabled()
+            and _source_literature_boundary_quality(
+                topic, papers, min_sources, profile_slug,
+            )[0]
+        ):
+            return fallback
     related = _source_literature_related_discovery_papers(
         runs_root, profile_slug, topic, min_sources,
     )
-    if related:
+    if related and publishable(related):
         return related
+    if related and not fallback:
+        fallback = related
     if not allow_live_fetch:
-        return papers
+        return fallback
     fetched = _fetch_source_literature_papers(topic, fetch_limit, domain=profile_slug)
-    return fetched or papers
+    return publishable(fetched) or fetched or fallback
 
 
 def _source_literature_preflight_candidate_papers(

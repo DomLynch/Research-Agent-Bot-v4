@@ -9843,9 +9843,16 @@ def test_source_literature_candidate_fetches_when_cached_sources_are_metadata_on
             ],
         }],
     })
+    fetched_titles = (
+        "Glycation AGEs tissue aging biomarker study",
+        "Advanced glycation end products and vascular aging",
+        "AGE accumulation in adult metabolic tissue",
+        "Glycation stress and cellular senescence markers",
+        "Advanced glycation products in aging biology",
+    )
     fetched = [
         {
-            "title": f"Glycation AGEs fact-backed source {idx}",
+            "title": title,
             "doi": f"10.1234/f{idx}",
             "source_fact": {
                 "canonical_phrase": f"glycation AGE boundary finding {idx}",
@@ -9854,7 +9861,7 @@ def test_source_literature_candidate_fetches_when_cached_sources_are_metadata_on
                 "endpoint": "aging signal",
             },
         }
-        for idx in range(5)
+        for idx, title in enumerate(fetched_titles)
     ]
     monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda *_args, **_kwargs: fetched)
 
@@ -11887,7 +11894,16 @@ def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
         "Metformin longevity healthspan translational review",
     ]
     fetched = [
-        {"title": title, "doi": f"10.1/f{idx}"}
+        {
+            "title": title,
+            "doi": f"10.1/f{idx}",
+            "source_fact": {
+                "canonical_phrase": f"metformin longevity finding {idx}",
+                "population": "adult longevity evidence",
+                "intervention": "metformin",
+                "endpoint": f"aging endpoint {idx}",
+            },
+        }
         for idx, title in enumerate(fetched_titles)
     ]
     daily._write_json(root / "_topics_discovery" / "fullraw.json", {
@@ -11916,6 +11932,57 @@ def test_source_literature_candidate_papers_refetches_repeated_discovery_bundle(
     assert daily._source_literature_boundary_quality(
         "metformin_longevity", papers, 5,
     ) == (True, "ok")
+
+
+def test_source_literature_candidate_papers_rejects_metadata_heavy_bundle(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    papers = [
+        {
+            "title": (
+                "Model evaluation results benchmark ranking"
+                if idx == 0 else f"Benchmark reproducibility paper {idx}"
+            ),
+            "doi": f"10.1/model-eval-{idx}",
+            "source_fact": (
+                {
+                    "canonical_phrase": "model evaluation results improve benchmark ranking",
+                    "population": "AI systems",
+                    "intervention": "model evaluation",
+                    "endpoint": "benchmark ranking",
+                } if idx == 0 else {
+                    "canonical_phrase": f"Title-level source match: Benchmark reproducibility paper {idx}",
+                    "endpoint": "source-literature relevance",
+                    "source_tier": "paper_metadata",
+                }
+            ),
+        }
+        for idx in range(25)
+    ]
+
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", lambda *_a, **_k: papers)
+
+    selected = daily._source_literature_candidate_papers(
+        root, "ai_research", "model_eval_results", 5, 25,
+    )
+
+    assert selected == papers
+    assert daily._source_literature_boundary_quality(
+        "model_eval_results", selected, 5, "ai_research",
+        require_substantive_sources=True,
+    ) == (False, "source_floor_below_min")
+    assert publish_literature.source_identity_count(
+        publish_literature.select_boundary_papers(
+            "model_eval_results",
+            papers,
+            5,
+            strict_topic_coverage=True,
+            profile_slug="ai_research",
+        ),
+        require_substantive=True,
+    ) == 1
 
 
 def test_source_literature_preflight_uses_single_current_candidate_window(
