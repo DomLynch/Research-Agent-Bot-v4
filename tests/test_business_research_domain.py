@@ -7507,6 +7507,40 @@ def test_business_sweep_expands_published_source_lit_family_blocks(
     assert sweep._topic_key("supply_chain_profitability") in expected
 
 
+def test_business_sweep_blocks_recent_duplicate_source_lit_attempt_family(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "supply_chain_resilience_value"
+    cycle._write_json(ledger_dir / "2026-07-10T06-20-11Z.json", {
+        "domain": {"slug": "business_research"},
+        "status": "no_fresh_candidate",
+        "source_literature_fallback_attempts": [{
+            "topic": topic,
+            "status": "blocked",
+            "reason": "duplicate_publication_bundle",
+        }],
+    })
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+
+    expected = {
+        sweep._topic_key(variant)
+        for variant in cycle._source_literature_fetch_topics(topic)
+    }
+
+    assert expected <= sweep._recent_source_literature_blocked_topics(
+        runs_root, "business_research",
+    )
+    assert sweep._topic_key("supply_chain_value") in expected
+
+
 def test_business_sweep_allows_repairable_directional_underfill_topic(
     tmp_path: Path,
     monkeypatch: Any,

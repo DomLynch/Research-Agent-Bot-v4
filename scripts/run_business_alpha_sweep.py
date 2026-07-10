@@ -1971,6 +1971,51 @@ def _source_lit_topic_key_variants(value: Any) -> set[str]:
     return {key for variant in variants if (key := _topic_key(variant))}
 
 
+_SOURCE_LIT_DUPLICATE_BLOCK_REASONS = frozenset({
+    "duplicate_publication_bundle",
+    "duplicate_published_bundle",
+    "duplicate_submission_fingerprint",
+    "rejected_duplicate",
+})
+
+
+def _recent_source_lit_attempt_topics(
+    runs_root: Path, domain: str, reasons: frozenset[str], *, days: int = 2,
+) -> set[str]:
+    ledger_dir = runs_root / "_daily_ledger"
+    cutoff = time.time() - (max(0, days) * 86400)
+    topics: set[str] = set()
+    for path in ledger_dir.glob("*.json"):
+        if path.name.startswith("_"):
+            continue
+        with suppress(OSError):
+            if path.stat().st_mtime < cutoff:
+                continue
+        ledger = read_json(path, {})
+        if not isinstance(ledger, dict):
+            continue
+        raw_domain = ledger.get("domain_slug") or ledger.get("domain")
+        ledger_domain = (
+            str(raw_domain.get("slug") or "") if isinstance(raw_domain, dict)
+            else str(raw_domain or "")
+        )
+        if ledger_domain and ledger_domain != domain:
+            continue
+        attempts = [ledger.get("source_literature_fallback")]
+        raw_attempts = ledger.get("source_literature_fallback_attempts")
+        if isinstance(raw_attempts, list):
+            attempts.extend(raw_attempts)
+        for attempt in attempts:
+            if not isinstance(attempt, dict):
+                continue
+            if str(attempt.get("reason") or "") not in reasons:
+                continue
+            topic = str(attempt.get("topic") or "").strip()
+            if topic:
+                topics.add(topic)
+    return topics
+
+
 def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> set[str]:
     ledger_dir = runs_root / "_daily_ledger"
     submitted_path = ledger_dir / "_submitted_fingerprints.json"
@@ -1979,6 +2024,9 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
         | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
+        | _recent_source_lit_attempt_topics(
+            runs_root, domain, _SOURCE_LIT_DUPLICATE_BLOCK_REASONS,
+        )
     )
     exact_blocked = publish_cycle._recent_source_floor_topics(
         ledger_dir, days=2, domain=domain,
