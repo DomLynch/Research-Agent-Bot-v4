@@ -2876,10 +2876,11 @@ def _recent_source_literature_floor_satisfied_topics(
 
 def _repairable_source_literature_decisions(
     runs_root: Path, domain: str | None, *, limit: int = 3,
+    entries: list[tuple[Path, Json]] | None = None,
 ) -> dict[str, Json]:
     decisions: dict[str, Json] = {}
     checked_topics: set[str] = set()
-    entries = _domain_ledger_entries(runs_root, domain)
+    entries = entries if entries is not None else _domain_ledger_entries(runs_root, domain)
     published = _recently_published_topics(
         runs_root / "_daily_ledger",
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
@@ -2911,7 +2912,7 @@ def _repairable_source_literature_decisions(
                 decision,
             )
             writer_framing_repair = _source_literature_writer_framing_repair_needed(
-                runs_root, domain, topic, decision,
+                runs_root, domain, topic, decision, ledgers=ledgers,
             )
             terminal_feedback_repair = _source_literature_terminal_feedback_repair_needed(
                 decision,
@@ -2968,21 +2969,23 @@ def _repairable_source_literature_decisions(
 def _priority_source_literature_repair_decisions(
     runs_root: Path, domain: str | None, *, limit: int = 3,
 ) -> dict[str, Json]:
+    entries = _domain_ledger_entries(runs_root, domain)
     decisions = _repairable_source_literature_decisions(
-        runs_root, domain, limit=max(limit * 3, limit),
+        runs_root, domain, limit=max(limit * 3, limit), entries=entries,
     )
+    ledgers = [ledger for _path, ledger in entries]
     priority: dict[str, Json] = {}
     for topic, decision in decisions.items():
         if (
             _source_literature_publish_framing_repair_needed(
-                runs_root, domain, topic, decision,
+                runs_root, domain, topic, decision, ledgers=ledgers,
             )
             or _source_literature_writer_framing_repair_needed(
-                runs_root, domain, topic, decision,
+                runs_root, domain, topic, decision, ledgers=ledgers,
             )
             or _source_literature_terminal_feedback_repair_needed(decision)
             or _source_literature_source_scope_repair_needed(
-                runs_root, domain, topic, decision,
+                runs_root, domain, topic, decision, ledgers=ledgers,
             )
         ):
             priority[topic] = decision
@@ -3059,15 +3062,16 @@ def _source_literature_attempt_budget(
                         ),
                     )
                 if _source_literature_parent_link_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     if clean_terminal_resubmit:
                         terminal_count = _source_literature_clean_terminal_submission_count(
-                            runs_root, domain, topic,
+                            runs_root, domain, topic, ledgers=domain_ledgers,
                         )
                         missing_object_parent = _source_literature_parent_link_repair_needed(
                             runs_root, domain, topic, decision,
                             require_submission_parent=True,
+                            ledgers=domain_ledgers,
                         )
                         if (
                             terminal_count < _SOURCE_LITERATURE_TERMINAL_RESUBMIT_ATTEMPT_LIMIT
@@ -3085,7 +3089,7 @@ def _source_literature_attempt_budget(
                 if clean_terminal_resubmit:
                     return budget
                 if _source_literature_renderer_feedback_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     budget = max(
                         budget,
@@ -3095,7 +3099,7 @@ def _source_literature_attempt_budget(
                         ),
                     )
                 if _source_literature_title_ownership_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     budget = max(
                         budget,
@@ -3105,7 +3109,7 @@ def _source_literature_attempt_budget(
                         ),
                     )
                 if _source_literature_field_ownership_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     budget = max(
                         budget,
@@ -3115,7 +3119,7 @@ def _source_literature_attempt_budget(
                         ),
                     )
                 if _source_literature_publish_framing_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     budget = max(
                         budget,
@@ -3125,7 +3129,7 @@ def _source_literature_attempt_budget(
                         ),
                     )
                 if _source_literature_writer_framing_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     budget = max(budget, count + 1)
                 if (
@@ -3140,7 +3144,7 @@ def _source_literature_attempt_budget(
                         ),
                     )
                 if _source_literature_source_scope_repair_needed(
-                    runs_root, domain, topic, decision,
+                    runs_root, domain, topic, decision, ledgers=domain_ledgers,
                 ):
                     budget = max(
                         budget,

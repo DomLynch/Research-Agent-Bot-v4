@@ -9834,20 +9834,33 @@ def test_exhausted_source_literature_reads_each_ledger_once(
     ledger_dir = root / "_daily_ledger"
     ledger_dir.mkdir(parents=True)
     for idx in range(12):
-        daily._write_json(ledger_dir / f"2026-06-29T05-{idx:02d}-00Z.json", {
+        row: dict[str, Any] = {
             "domain": {"slug": "longevity_research"},
             "submitted": 1,
             "candidate": {
                 "topic": f"candidate_{idx}",
                 "run_dir": f"candidate_{idx}-source-literature-test",
+                "fingerprint": f"fp-{idx}",
             },
-        })
+        }
+        if idx == 0:
+            row["researka_decision"] = {
+                "decision": "revise",
+                "claim_support_verdict": "supported",
+                "notes": ["external author must resubmit"],
+                "resubmission": {
+                    "allowed": True,
+                    "parent_submission_id": "sub-parent",
+                },
+            }
+        daily._write_json(ledger_dir / f"2026-06-29T05-{idx:02d}-00Z.json", row)
     reads = 0
     original_json = daily._json
 
     def tracked_json(path: Path, default: Any) -> Any:
         nonlocal reads
-        reads += 1
+        if path.parent == ledger_dir:
+            reads += 1
         return original_json(path, default)
 
     monkeypatch.setattr(daily, "_json", tracked_json)
