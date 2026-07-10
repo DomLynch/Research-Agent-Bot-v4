@@ -13359,7 +13359,10 @@ def test_source_literature_fallback_uses_seed_after_duplicate_reject(
         "domain": {"slug": "longevity_research"},
         "all": [{"topic": "first_boundary", "paper_count": 9, "fact_source_count": 9}],
     })
-    monkeypatch.setattr(daily, "_domain_seed_prefixes", lambda _domain: ("second_boundary",))
+    monkeypatch.setattr(
+        daily, "_domain_seed_prefixes",
+        lambda _domain: ("second_boundary", "third_boundary"),
+    )
     submitted_topics: list[str] = []
 
     def papers_for(topic: str, _limit: int, **_kwargs: Any) -> list[dict[str, Any]]:
@@ -13374,6 +13377,19 @@ def test_source_literature_fallback_uses_seed_after_duplicate_reject(
                 "endpoint": "aging signal",
             },
         } for idx, stem in enumerate(stems)]
+
+    old_candidate, _payload = daily._source_literature_payload(
+        profile_slug="longevity_research", topic="first_boundary",
+        papers=papers_for("first_boundary", 15), runs_root=root,
+        date="2026-06-11T19-35-00Z",
+    )
+    daily._write_json(root / "_daily_ledger" / "_submitted_fingerprints.json", [{
+        "date": "2026-06-11T19-30-00Z",
+        "domain": old_candidate.get("domain"),
+        "topic": "first_boundary",
+        "fingerprint": old_candidate.get("memo_fingerprint"),
+        "memo_sha256": daily._memo_sha256(old_candidate, root),
+    }])
 
     def submitter(payload: dict[str, Any]) -> dict[str, Any]:
         topic = str(payload.get("topic") or "")
@@ -13390,12 +13406,13 @@ def test_source_literature_fallback_uses_seed_after_duplicate_reject(
         domain="longevity_research",
         queue=_queue(),
         submit=True,
+        source_literature_priority_topics=["first_boundary"],
         submitter=submitter,
         decision_fetcher=lambda submission_id: {
             "status": "complete",
-            "decision": "reject" if submission_id == "sub-first_boundary" else "accept",
+            "decision": "reject" if submission_id == "sub-second_boundary" else "accept",
             "failure_category": "integrity_duplicate"
-            if submission_id == "sub-first_boundary" else None,
+            if submission_id == "sub-second_boundary" else None,
             "publication": {"url": "https://researka.org/alpha/source-lit"},
         },
         page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
@@ -13404,11 +13421,13 @@ def test_source_literature_fallback_uses_seed_after_duplicate_reject(
     )
 
     assert ledger["status"] == "published"
-    assert submitted_topics == ["first_boundary", "second_boundary"]
+    assert submitted_topics == ["second_boundary", "third_boundary"]
     assert [row["status"] for row in ledger["cycle_attempts"]] == [
         "reviewer_rejected", "published",
     ]
-    assert ledger["source_literature_fallback_attempts"][1]["configured_seed_fallback"] is True
+    attempts = ledger["source_literature_fallback_attempts"]
+    assert attempts[0]["reason"] == "duplicate_submission_fingerprint"
+    assert attempts[1]["configured_seed_fallback"] is True
 
 
 def test_source_literature_fallback_resubmits_supported_minor_revise_same_cycle(

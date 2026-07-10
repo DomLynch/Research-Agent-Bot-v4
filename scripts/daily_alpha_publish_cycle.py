@@ -7592,6 +7592,9 @@ def run_cycle(
                         fallback_attempt["status"] = "blocked"
                         fallback_attempt["reason"] = "duplicate_submission_fingerprint"
                         fallback_attempt["fingerprint"] = fingerprint
+                        fallback_attempt["configured_seed_fallback_queued"] = (
+                            add_seed_fallbacks(literature_topic)
+                        )
                         continue
                 payload_blocker = _source_literature_payload_bundle_blocker(
                     payload,
