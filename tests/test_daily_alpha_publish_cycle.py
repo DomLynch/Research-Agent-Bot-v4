@@ -13350,6 +13350,67 @@ def test_source_literature_fallback_tries_next_after_reviewer_revise(
     ]
 
 
+def test_source_literature_fallback_uses_seed_after_duplicate_reject(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "_topics_discovery").mkdir(parents=True)
+    daily._write_json(root / "_topics_discovery" / "longevity.json", {
+        "domain": {"slug": "longevity_research"},
+        "all": [{"topic": "first_boundary", "paper_count": 9, "fact_source_count": 9}],
+    })
+    monkeypatch.setattr(daily, "_domain_seed_prefixes", lambda _domain: ("second_boundary",))
+    submitted_topics: list[str] = []
+
+    def papers_for(topic: str, _limit: int) -> list[dict[str, Any]]:
+        stems = ("metabolism", "inflammation", "mitochondria", "senescence", "proteostasis")
+        return [{
+            "title": f"{topic} {stem}",
+            "doi": f"10.1234/{topic}-{idx}",
+            "source_fact": {
+                "canonical_phrase": f"{topic} fact-level receipt {idx}",
+                "population": "adult source context",
+                "intervention": topic.replace("_", " "),
+                "endpoint": "aging signal",
+            },
+        } for idx, stem in enumerate(stems)]
+
+    def submitter(payload: dict[str, Any]) -> dict[str, Any]:
+        topic = str(payload.get("topic") or "")
+        submitted_topics.append(topic)
+        return {
+            "ok": True, "status": 200,
+            "response": {"submission": {"id": f"sub-{topic}"}},
+        }
+
+    ledger = daily.run_cycle(
+        runs_root=root,
+        date="2026-06-11T19-35-00Z",
+        domain="longevity_research",
+        queue=_queue(),
+        submit=True,
+        source_paper_fetcher=papers_for,
+        submitter=submitter,
+        decision_fetcher=lambda submission_id: {
+            "status": "complete",
+            "decision": "reject" if submission_id == "sub-first_boundary" else "accept",
+            "failure_category": "integrity_duplicate"
+            if submission_id == "sub-first_boundary" else None,
+            "publication": {"url": "https://researka.org/alpha/source-lit"},
+        },
+        page_fetcher=lambda _url: {"ok": True, "status": 200, "body": "<title>Source</title>"},
+        fetcher=lambda _doi: {"message": {}},
+        sleep=lambda _seconds: None,
+    )
+
+    assert ledger["status"] == "published"
+    assert submitted_topics == ["first_boundary", "second_boundary"]
+    assert [row["status"] for row in ledger["cycle_attempts"]] == [
+        "reviewer_rejected", "published",
+    ]
+    assert ledger["source_literature_fallback_attempts"][1]["configured_seed_fallback"] is True
+
+
 def test_source_literature_fallback_resubmits_supported_minor_revise_same_cycle(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:

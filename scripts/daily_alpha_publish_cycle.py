@@ -7386,6 +7386,23 @@ def run_cycle(
                         break
             literature_topics = expanded_topics
         terminal_resubmit_topics: set[str] = set()
+        seed_fallback_topics: set[str] = set()
+
+        def add_seed_fallbacks(blocked_topic: str) -> int:
+            blocked = source_literature_blocked_topics | {blocked_topic}
+            before = len(literature_topics)
+            for topic in _domain_seed_prefixes(profile.slug):
+                if len(literature_topics) >= source_lit_scan_limit:
+                    break
+                if topic in literature_topics or _source_literature_family_blocked_topic(
+                    topic, blocked,
+                    soft_broad_blocked_topics=source_literature_soft_blocked_topics,
+                ):
+                    continue
+                literature_topics.append(topic)
+                seed_fallback_topics.add(topic)
+            return len(literature_topics) - before
+
         for idx, literature_topic in enumerate(literature_topics):
             expanded_from_topic = ""
             resumed = resumable_source_lit.get(literature_topic)
@@ -7521,6 +7538,8 @@ def run_cycle(
                     )
             if literature_topic in repair_topic_set:
                 fallback_attempt["repair_submission"] = True
+            if literature_topic in seed_fallback_topics:
+                fallback_attempt["configured_seed_fallback"] = True
             ledger.setdefault("source_literature_fallback_attempts", []).append(fallback_attempt)
             ledger["source_literature_fallback"] = fallback_attempt
             _write_ledger(ledger_path, ledger)
@@ -7642,6 +7661,10 @@ def run_cycle(
                                 "researka_decision": researka_decision,
                                 "public_page_check": ledger.get("public_page_check"),
                             })
+                            if _integrity_duplicate_rejection(researka_decision):
+                                fallback_attempt["configured_seed_fallback_queued"] = (
+                                    add_seed_fallbacks(literature_topic)
+                                )
                             _write_ledger(ledger_path, ledger)
                             if (
                                 final == _DECISION_REVISE
@@ -7800,6 +7823,10 @@ def run_cycle(
                     return ledger
                 fallback_attempt["status"] = "blocked"
                 fallback_attempt["reason"] = result["status"]
+                if result["status"] == "rejected_duplicate":
+                    fallback_attempt["configured_seed_fallback_queued"] = (
+                        add_seed_fallbacks(literature_topic)
+                    )
     if ledger["cycle_attempts"]:
         last_status = str(ledger["cycle_attempts"][-1].get("status") or "failed")
         ledger.update({
