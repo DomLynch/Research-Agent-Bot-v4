@@ -7507,6 +7507,43 @@ def test_business_sweep_expands_published_source_lit_family_blocks(
     assert sweep._topic_key("supply_chain_profitability") in expected
 
 
+def test_business_sweep_source_lit_family_cooldown_outlives_general_cooldown(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "supply_chain_resilience_profitability"
+    ledger = ledger_dir / "2026-07-02T15-04-49Z.json"
+    cycle._write_json(ledger, {
+        "domain": {"slug": "business_research"},
+        "status": "published",
+        "published": 1,
+        "submitted_topic": topic,
+        "published_topic": topic,
+    })
+    stale = (dt.datetime.now(dt.UTC) - dt.timedelta(days=5)).timestamp()
+    os.utime(ledger, (stale, stale))
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        sweep,
+        "_source_lit_family_cooldown_days",
+        lambda _domain: 30,
+    )
+
+    blocked = sweep._recent_source_literature_blocked_topics(
+        runs_root, "business_research",
+    )
+
+    assert sweep._topic_key(topic) in blocked
+    assert sweep._topic_key("supply_chain_profitability") in blocked
+
+
 def test_business_sweep_blocks_recent_duplicate_source_lit_attempt_family(
     tmp_path: Path,
     monkeypatch: Any,

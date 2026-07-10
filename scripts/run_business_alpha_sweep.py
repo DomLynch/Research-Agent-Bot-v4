@@ -2542,13 +2542,7 @@ def main() -> int:
                 key
                 for topic in publish_cycle._recent_submission_topics(
                     args.runs_root / "_daily_ledger" / "_submitted_fingerprints.json",
-                    days=int(
-                        getattr(
-                            publish_cycle,
-                            "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS",
-                            30,
-                        ),
-                    ),
+                    days=_source_lit_family_cooldown_days(domain),
                     domain=domain,
                 )
                 for key in _source_lit_topic_key_variants(topic)
