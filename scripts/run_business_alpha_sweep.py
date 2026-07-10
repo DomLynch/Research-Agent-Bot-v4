@@ -1963,15 +1963,25 @@ def _topic_key(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", "_", str(value or "").casefold()).strip("_")
 
 
+def _source_lit_topic_key_variants(value: Any) -> set[str]:
+    topic = str(value or "").strip()
+    if not topic:
+        return set()
+    variants = [topic, *publish_cycle._source_literature_fetch_topics(topic)[1:]]
+    return {key for variant in variants if (key := _topic_key(variant))}
+
+
 def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> set[str]:
     ledger_dir = runs_root / "_daily_ledger"
     submitted_path = ledger_dir / "_submitted_fingerprints.json"
     days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
-    blocked = (
+    family_blocked = (
         publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
         | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
-        | publish_cycle._recent_source_floor_topics(ledger_dir, days=2, domain=domain)
+    )
+    exact_blocked = publish_cycle._recent_source_floor_topics(
+        ledger_dir, days=2, domain=domain,
     )
     structurally_blocked = publish_cycle._recent_source_literature_structural_blocked_topics(
         ledger_dir, days=2, domain=domain,
@@ -1986,8 +1996,12 @@ def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> se
         key for topic in structurally_blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
     } | {
-        key for topic in blocked
+        key for topic in exact_blocked
         if (key := _topic_key(topic)) and key not in repairable_keys
+    } | {
+        key for topic in family_blocked
+        if _topic_key(topic) not in repairable_keys
+        for key in _source_lit_topic_key_variants(topic)
     }
 
 
@@ -2026,7 +2040,7 @@ def _hard_source_literature_blocked_topic_keys(runs_root: Path, domain: str) -> 
         publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
     )
-    return {key for topic in hard_blocked if (key := _topic_key(topic))}
+    return {key for topic in hard_blocked for key in _source_lit_topic_key_variants(topic)}
 
 
 def _cached_ready_source_literature_papers_with_topic(
