@@ -2807,6 +2807,8 @@ def payload(
             "adjacent scope, not effect support; no pooled causal, policy-prescriptive, "
             "or market-generalized claim is made."
         )
+    if not non_bio and contrast_text:
+        abstract_text = f"{contrast_text} {abstract_text}"
     moderator_note = _specific_moderator_note(facts, source_types)
     next_gaps = [
         _pico_gap(facts, profile.slug),

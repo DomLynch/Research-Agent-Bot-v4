@@ -18358,6 +18358,8 @@ def test_source_literature_payload_separates_comparator_and_economic_rows(
     )
 
     markdown = payload["markdown"]
+    assert payload["abstract"].startswith("Concrete contrast:")
+    assert "Cost-Effectiveness of Dapagliflozin for Heart Failure" in payload["abstract"]
     assert "directionally favorable: 3 receipt(s)" in markdown
     assert "economic/context only: 1 receipt(s)" in markdown
     assert "comparator/not favorable: 1 receipt(s)" in markdown
