@@ -7389,6 +7389,8 @@ def run_cycle(
         seed_fallback_topics: set[str] = set()
 
         def add_seed_fallbacks(blocked_topic: str) -> int:
+            if paper_fetcher is not None:
+                return 0
             blocked = source_literature_blocked_topics | {blocked_topic}
             before = len(literature_topics)
             for topic in _domain_seed_prefixes(profile.slug):

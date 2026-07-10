@@ -13362,7 +13362,7 @@ def test_source_literature_fallback_uses_seed_after_duplicate_reject(
     monkeypatch.setattr(daily, "_domain_seed_prefixes", lambda _domain: ("second_boundary",))
     submitted_topics: list[str] = []
 
-    def papers_for(topic: str, _limit: int) -> list[dict[str, Any]]:
+    def papers_for(topic: str, _limit: int, **_kwargs: Any) -> list[dict[str, Any]]:
         stems = ("metabolism", "inflammation", "mitochondria", "senescence", "proteostasis")
         return [{
             "title": f"{topic} {stem}",
@@ -13383,13 +13383,13 @@ def test_source_literature_fallback_uses_seed_after_duplicate_reject(
             "response": {"submission": {"id": f"sub-{topic}"}},
         }
 
+    monkeypatch.setattr(daily, "_fetch_source_literature_papers", papers_for)
     ledger = daily.run_cycle(
         runs_root=root,
         date="2026-06-11T19-35-00Z",
         domain="longevity_research",
         queue=_queue(),
         submit=True,
-        source_paper_fetcher=papers_for,
         submitter=submitter,
         decision_fetcher=lambda submission_id: {
             "status": "complete",
