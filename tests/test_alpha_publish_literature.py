@@ -217,6 +217,43 @@ def test_fetch_papers_topups_nonbio_directional_underfill(
     ) == (True, "ok")
 
 
+def test_select_boundary_papers_topups_biomedical_directional_underfill() -> None:
+    topic = "telomere"
+    papers = [
+        {
+            "title": f"Telomere length predictor context {idx}",
+            "doi": f"10.9100/context-{idx}",
+            "source_fact": {
+                "canonical_phrase": "telomere length was used as a prediction input",
+                "population": f"clinical setting {idx}",
+                "intervention": "telomere length",
+                "endpoint": f"prediction endpoint {idx}",
+            },
+        }
+        for idx in range(5)
+    ] + [
+        {
+            "title": f"Telomere intervention lifespan signal {idx}",
+            "doi": f"10.9100/signal-{idx}",
+            "source_fact": {
+                "canonical_phrase": "telomere intervention increased lifespan",
+                "population": f"animal setting {idx}",
+                "intervention": "telomere intervention",
+                "endpoint": "lifespan",
+            },
+        }
+        for idx in range(2)
+    ]
+
+    selected = literature.select_boundary_papers(
+        topic, papers, 5, profile_slug="longevity_research",
+    )
+
+    assert literature._directional_receipt_count(
+        selected, topic, "longevity_research",
+    ) == 2
+
+
 def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() -> None:
     topic = "supply_chain_resilience_performance"
     fact_backed = [

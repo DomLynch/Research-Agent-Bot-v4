@@ -475,21 +475,25 @@ def _boundary_receipt_count(papers: list[Json], topic: str, profile_slug: str) -
 def _null_mixed_receipt_count(papers: list[Json], topic: str, profile_slug: str) -> int:
     return sum(
         1 for paper in papers
-        if _paper_evidence_role(paper, topic, profile_slug) == "null/mixed"
+        if _paper_evidence_role(paper, topic, profile_slug)
+        in {"null/mixed", "null/non-convergent"}
     )
 
 
 def _directional_floor_met(
     papers: list[Json], topic: str, profile_slug: str, min_sources: int,
 ) -> bool:
-    required_directional = min(3, min_sources)
+    non_bio = _non_biomedical(profile_slug)
+    required_directional = min(3 if non_bio else 2, min_sources)
     directional_count = _directional_receipt_count(papers, topic, profile_slug)
     if directional_count >= required_directional:
         return True
+    null_count = _null_mixed_receipt_count(papers, topic, profile_slug)
+    if not non_bio:
+        return directional_count >= 1 and null_count >= 1
     return (
-        _non_biomedical(profile_slug)
-        and directional_count >= 2
-        and _null_mixed_receipt_count(papers, topic, profile_slug) >= 1
+        directional_count >= 2
+        and null_count >= 1
         and _boundary_receipt_count(papers, topic, profile_slug) >= 2
     )
 
@@ -500,10 +504,7 @@ def _source_lit_selection(
     ordered = _source_diverse_order(topic, papers)
     selected = ordered[:min_sources]
     required_directional = min(3 if _non_biomedical(profile_slug) else 2, min_sources)
-    if (
-        _non_biomedical(profile_slug)
-        and _directional_receipt_count(selected, topic, profile_slug) < required_directional
-    ):
+    if _directional_receipt_count(selected, topic, profile_slug) < required_directional:
         for candidate in ordered[min_sources:]:
             if (
                 _paper_evidence_role(candidate, topic, profile_slug)
@@ -588,10 +589,10 @@ def select_boundary_papers(
             rows for family, rows in substantive_buckets.items()
             if family != "other source context" and len(rows) >= min_sources
         ]
-        if coherent_substantive:
-            return _source_lit_selection(
-                topic, max(coherent_substantive, key=len), min_sources, profile_slug,
-            )
+        for rows in sorted(coherent_substantive, key=len, reverse=True):
+            selected = _source_lit_selection(topic, rows, min_sources, profile_slug)
+            if _directional_floor_met(selected, topic, profile_slug, min_sources):
+                return selected
         return _source_lit_selection(topic, substantive, min_sources, profile_slug)
     buckets: dict[str, list[Json]] = {}
     for paper in usable:
@@ -642,8 +643,9 @@ def boundary_quality(
         return False, "predictive_model_only_bundle"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
-    if _non_biomedical(profile_slug) and not _directional_floor_met(
-        usable, topic, profile_slug, min_sources,
+    if (
+        substantive_fact_count(usable) >= min_sources
+        and not _directional_floor_met(usable, topic, profile_slug, min_sources)
     ):
         return False, "directional_receipt_floor_below_min"
     return True, "ok"

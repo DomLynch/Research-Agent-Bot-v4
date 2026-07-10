@@ -1207,6 +1207,13 @@ def _canonical_family_key(value: str) -> str:
     return "topic:" + exact if exact else ""
 
 
+def _dedupe_adjacent_topic_tokens(value: str) -> str:
+    raw = str(value).strip()
+    tokens = _CLAIM_WORD.findall(raw.lower())
+    deduped = [token for idx, token in enumerate(tokens) if not idx or token != tokens[idx - 1]]
+    return "_".join(deduped) if len(deduped) < len(tokens) else raw
+
+
 def _canonical_family_keys(values: Iterable[str]) -> set[str]:
     return {
         key for value in values
@@ -5078,7 +5085,7 @@ def _source_literature_topic_candidates(
         for row in rows:
             if not isinstance(row, dict):
                 continue
-            topic = str(row.get("topic") or "").strip()
+            topic = _dedupe_adjacent_topic_tokens(str(row.get("topic") or ""))
             raw_source_papers = row.get("source_papers")
             source_paper_count = (
                 len(raw_source_papers) if isinstance(raw_source_papers, list) else 0
@@ -5126,7 +5133,7 @@ def _source_literature_topic_candidates(
             for row in rows:
                 if not isinstance(row, dict) or not _same_domain(_row_domain(row), profile_slug):
                     continue
-                topic = str(row.get("topic") or "").strip()
+                topic = _dedupe_adjacent_topic_tokens(str(row.get("topic") or ""))
                 if not topic or topic in seen or _source_literature_family_blocked_topic(
                     topic, blocked,
                     soft_broad_blocked_topics=soft_broad_blocked_topics,

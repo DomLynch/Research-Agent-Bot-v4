@@ -16675,6 +16675,37 @@ def test_source_literature_boundary_rejects_diagnostic_model_only_longevity_bund
     assert reason == "predictive_model_only_bundle"
 
 
+def test_source_literature_boundary_rejects_all_context_fact_bundle() -> None:
+    rows = (
+        ("Telomere length in glucose prediction", "telomere length was used as a prediction input", "glucose prediction"),
+        ("Telomere length and treatment response", "telomere length stratified treatment response", "response stratification"),
+        ("Telomere length as a response moderator", "telomere length moderated the observed response", "response moderation"),
+        ("Telomere length as a recorded outcome", "telomere length was recorded as an outcome", "telomere length"),
+        ("Telomere length for patient subgrouping", "telomere length defined the patient subgroup", "patient subgroup"),
+    )
+    papers = [
+        {
+            "title": title,
+            "doi": f"10.1234/telomere-context-{idx}",
+            "source_fact": {
+                "canonical_phrase": phrase,
+                "population": f"clinical cohort {idx}",
+                "intervention": "telomere length",
+                "endpoint": endpoint,
+            },
+        }
+        for idx, (title, phrase, endpoint) in enumerate(rows)
+    ]
+
+    ok, reason = daily._source_literature_boundary_quality(
+        "telomere", papers, 5, "longevity_research",
+        require_substantive_sources=True,
+    )
+
+    assert ok is False
+    assert reason == "directional_receipt_floor_below_min"
+
+
 def test_source_literature_bundle_resolves_doi_url_openalex_and_cochrane_review() -> None:
     title = (
         "Metformin for prevention or delay of type 2 diabetes mellitus and "
