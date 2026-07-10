@@ -2505,15 +2505,11 @@ def _source_literature_submission_count(
 
 def _source_literature_clean_terminal_submission_count(
     runs_root: Path, domain: str | None, topic: str,
+    *, ledgers: list[Json] | None = None,
 ) -> int:
     count = 0
-    for path in (runs_root / "_daily_ledger").glob("*.json"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-            or not int(ledger.get("submitted") or 0)
-        ):
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
+        if not int(ledger.get("submitted") or 0):
             continue
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
@@ -2534,20 +2530,14 @@ def _source_literature_clean_terminal_submission_count(
 
 def _source_literature_parent_link_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
-    *, require_submission_parent: bool = False,
+    *, require_submission_parent: bool = False, ledgers: list[Json] | None = None,
 ) -> bool:
     parent_submission_id = _resubmission_parent_submission_id(decision)
     if not parent_submission_id:
         return False
     saw_submitted_source_literature = False
     saw_other_submission_parent_payload = False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
@@ -2596,16 +2586,11 @@ def _source_literature_parent_link_repair_needed(
 
 def _source_literature_renderer_feedback_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, ledgers: list[Json] | None = None,
 ) -> bool:
     if not _source_literature_render_repair_revise(decision):
         return False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
@@ -2630,6 +2615,7 @@ def _source_literature_renderer_feedback_repair_needed(
 
 def _source_literature_title_ownership_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, ledgers: list[Json] | None = None,
 ) -> bool:
     if (
         not isinstance(decision, dict)
@@ -2638,13 +2624,7 @@ def _source_literature_title_ownership_repair_needed(
         or str(decision.get("claim_support_verdict") or "").lower() == "unsupported"
     ):
         return False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
@@ -2664,19 +2644,14 @@ def _source_literature_title_ownership_repair_needed(
 
 def _source_literature_field_ownership_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, ledgers: list[Json] | None = None,
 ) -> bool:
     if not _source_literature_render_repair_revise(decision):
         return False
     notes = _norm(_revision_notes(decision))
     if not any(marker in notes for marker in _SOURCE_LITERATURE_FIELD_OWNERSHIP_MARKERS):
         return False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
@@ -2735,18 +2710,13 @@ def _source_literature_terminal_resubmit_needed(
 
 def _source_literature_publish_framing_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, ledgers: list[Json] | None = None,
 ) -> bool:
     if not _clean_supported_revise(decision):
         return False
     if "external author must resubmit" not in _norm(_revision_notes(decision)):
         return False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
@@ -2775,19 +2745,14 @@ def _source_literature_terminal_feedback_repair_needed(decision: Json) -> bool:
 
 def _source_literature_writer_framing_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, ledgers: list[Json] | None = None,
 ) -> bool:
     if not _source_literature_render_repair_revise(decision):
         return False
     notes = _norm(_revision_notes(decision))
     if not any(term in notes for term in _SOURCE_LITERATURE_WRITER_REPAIR_TERMS):
         return False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
@@ -2839,19 +2804,14 @@ def _source_literature_parented_terminal_resubmit(decision: Json) -> bool:
 
 def _source_literature_source_scope_repair_needed(
     runs_root: Path, domain: str | None, topic: str, decision: Json,
+    *, ledgers: list[Json] | None = None,
 ) -> bool:
     if not _source_literature_terminal_feedback_repair_needed(decision):
         return False
     notes = _norm(_revision_notes(decision))
     if not any(term in notes for term in _SOURCE_LITERATURE_SOURCE_SCOPE_FEEDBACK_TERMS):
         return False
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict) or not int(ledger.get("submitted") or 0):
             continue
