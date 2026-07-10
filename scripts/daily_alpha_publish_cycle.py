@@ -7595,6 +7595,7 @@ def run_cycle(
                         fallback_attempt["configured_seed_fallback_queued"] = (
                             add_seed_fallbacks(literature_topic)
                         )
+                        _write_ledger(ledger_path, ledger)
                         continue
                 payload_blocker = _source_literature_payload_bundle_blocker(
                     payload,
