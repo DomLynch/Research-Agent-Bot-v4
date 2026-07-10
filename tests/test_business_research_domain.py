@@ -1195,7 +1195,7 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
         "--submit-date", "2026-06-26T03-00-00Z",
     ])
 
-    assert sweep.main() == 2
+    assert sweep.main() == 1
     diagnostic = json.loads(
         (tmp_path / "runs" / "_business_diagnostics" / "business_research-pricing_strategy_margin.json").read_text(
             encoding="utf-8",
@@ -1208,7 +1208,14 @@ def test_business_sweep_surfaces_incomplete_fullraw_receipt(
         ),
     )
     assert "fullraw_probe_busy" in queue_payload["not_ready"][0]["blockers"]
-    summary = health.summarize_latest(tmp_path / "runs", domain="business_research")
+    assert not (
+        tmp_path / "runs" / "_daily_ledger" / "2026-06-26T03-00-00Z-business_research.json"
+    ).exists()
+    summary = json.loads(
+        (
+            tmp_path / "runs" / "_daily_ledger" / "business_alpha_sweep_summary.json"
+        ).read_text(encoding="utf-8"),
+    )
     assert summary["next_action"] == "wait_for_fullraw_completion"
     assert summary["top_blockers"]["fullraw_probe_busy"] == 1
 
@@ -3600,7 +3607,7 @@ def test_business_sweep_continues_after_running_fullraw_probe(
         "--runs-root", str(tmp_path / "runs"),
     ])
 
-    assert sweep.main() == 2
+    assert sweep.main() == 1
     assert probed_topics == [
         "platform_strategy_network_effects",
         "management_practices_productivity",
@@ -4168,7 +4175,7 @@ def test_business_sweep_keeps_cached_facts_when_live_fullraw_is_busy(
         "--submit-date", "2026-06-29T04-35-00Z",
     ])
 
-    assert sweep.main() == 2
+    assert sweep.main() == 1
     assert submissions == []
 
     summary = json.loads(
@@ -7745,7 +7752,7 @@ def test_business_sweep_bounds_cached_fullraw_ranking_before_selection(
         "--submit-date", "2026-06-30T02-05-00Z",
     ])
 
-    assert sweep.main() == 2
+    assert sweep.main() == 1
     assert cache_calls == topics[:3]
 
 
@@ -7792,7 +7799,7 @@ def test_business_sweep_diversifies_fullraw_probe_families_before_selection(
         "--submit-date", "2026-07-02T02-30-00Z",
     ])
 
-    assert sweep.main() == 2
+    assert sweep.main() == 1
     assert fullraw_calls == [
         "platform_strategy_network_sales",
         "inventory_visibility_performance",

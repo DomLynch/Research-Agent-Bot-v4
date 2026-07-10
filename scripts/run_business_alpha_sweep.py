@@ -2445,6 +2445,17 @@ def _write_sweep_end_summary(
     return path
 
 
+def _row_fullraw_wait_retryable(row: dict[str, Any]) -> bool:
+    return (
+        row.get("status") == "no_bundle"
+        and "fullraw_probe_busy" in (row.get("blockers") or [])
+    )
+
+
+def _fullraw_wait_retryable(rows: list[dict[str, Any]]) -> bool:
+    return bool(rows) and all(_row_fullraw_wait_retryable(row) for row in rows)
+
+
 def _bundle_fingerprint(bundle: Any) -> str:
     return "|".join((
         str(bundle.domain),
@@ -3245,7 +3256,7 @@ def main() -> int:
                         f"[business-sweep] no_bundle {domain} {topic} facts={len(facts)}",
                         flush=True,
                     )
-                    if not fullraw_ready:
+                    if not fullraw_ready and not _row_fullraw_wait_retryable(row):
                         ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime(
                             "%Y-%m-%dT%H-%M-%SZ",
                         )
@@ -3406,7 +3417,9 @@ def main() -> int:
         if cycle + 1 < args.cycles and args.sleep_seconds > 0:
             time.sleep(args.sleep_seconds)
     ledger_date = args.submit_date or dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
-    _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
+    retryable_fullraw_wait = _fullraw_wait_retryable(rows)
+    if not retryable_fullraw_wait:
+        _write_no_ready_ledgers(args.runs_root, rows, ledger_date)
     _write_sweep_end_summary(args.runs_root, rows, ledger_date)
     summary_path = _write_sweep_summary(args.runs_root, rows)
     print(
@@ -3414,7 +3427,7 @@ def main() -> int:
         file=sys.stderr,
         flush=True,
     )
-    return 2
+    return 1 if retryable_fullraw_wait else 2
 
 
 if __name__ == "__main__":
