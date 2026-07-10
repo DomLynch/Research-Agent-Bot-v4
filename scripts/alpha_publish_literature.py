@@ -498,6 +498,17 @@ def _directional_floor_met(
     )
 
 
+def _shared_source_fact_scope(papers: list[Json], min_sources: int) -> bool:
+    facts = [paper.get("source_fact") for paper in papers]
+    if len(facts) < min_sources or not all(isinstance(fact, dict) for fact in facts):
+        return False
+    for key in ("intervention", "endpoint", "metric"):
+        values = [title_key(fact.get(key)) for fact in facts if isinstance(fact, dict)]
+        if all(values) and len(set(values)) == 1:
+            return True
+    return False
+
+
 def _source_lit_selection(
     topic: str, papers: list[Json], min_sources: int, profile_slug: str,
 ) -> list[Json]:
@@ -591,7 +602,10 @@ def select_boundary_papers(
         ]
         for rows in sorted(coherent_substantive, key=len, reverse=True):
             selected = _source_lit_selection(topic, rows, min_sources, profile_slug)
-            if _directional_floor_met(selected, topic, profile_slug, min_sources):
+            if (
+                _directional_floor_met(selected, topic, profile_slug, min_sources)
+                or _shared_source_fact_scope(selected, min_sources)
+            ):
                 return selected
         return _source_lit_selection(topic, substantive, min_sources, profile_slug)
     buckets: dict[str, list[Json]] = {}
@@ -643,11 +657,13 @@ def boundary_quality(
         return False, "predictive_model_only_bundle"
     if _uniform_favorable_cross_pico(usable, min_sources):
         return False, "directionally_uniform_cross_pico_bundle"
-    if (
-        substantive_fact_count(usable) >= min_sources
-        and not _directional_floor_met(usable, topic, profile_slug, min_sources)
+    if substantive_fact_count(usable) >= min_sources and not _directional_floor_met(
+        usable, topic, profile_slug, min_sources,
     ):
-        return False, "directional_receipt_floor_below_min"
+        if _non_biomedical(profile_slug):
+            return False, "directional_receipt_floor_below_min"
+        if not _shared_source_fact_scope(usable, min_sources):
+            return False, "source_fact_scope_incoherent"
     return True, "ok"
 
 

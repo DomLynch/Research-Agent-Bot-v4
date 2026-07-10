@@ -7980,6 +7980,14 @@ def test_scope_mismatch_map_prioritizes_fresh_parent_topic(
     assert calls[-1]["priority_topics"] == ["metformin"]
 
 
+def test_source_literature_topic_dedupes_adjacent_tokens() -> None:
+    assert daily._dedupe_adjacent_topic_tokens("telomere_telomere") == "telomere"
+    assert (
+        daily._dedupe_adjacent_topic_tokens("minimum_wage_employment")
+        == "minimum_wage_employment"
+    )
+
+
 def test_agent_repair_needed_queue_prioritizes_fresh_parent_topic(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
@@ -16696,6 +16704,11 @@ def test_source_literature_boundary_rejects_all_context_fact_bundle() -> None:
         }
         for idx, (title, phrase, endpoint) in enumerate(rows)
     ]
+    for paper, intervention in zip(papers, (
+        "neural network model", "pioglitazone response", "treatment moderator",
+        "telomere outcome", "patient stratifier",
+    ), strict=True):
+        paper["source_fact"]["intervention"] = intervention
 
     ok, reason = daily._source_literature_boundary_quality(
         "telomere", papers, 5, "longevity_research",
@@ -16703,7 +16716,7 @@ def test_source_literature_boundary_rejects_all_context_fact_bundle() -> None:
     )
 
     assert ok is False
-    assert reason == "directional_receipt_floor_below_min"
+    assert reason == "source_fact_scope_incoherent"
 
 
 def test_source_literature_bundle_resolves_doi_url_openalex_and_cochrane_review() -> None:

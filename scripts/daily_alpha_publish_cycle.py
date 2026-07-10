@@ -208,6 +208,7 @@ _DEFAULT_MIN_DIRECT_SUBMIT_SOURCES = _alpha_memo_int("min_direct_source_papers",
 _SOURCE_LITERATURE_SCAN_LIMIT = max(10, _DEFAULT_MIN_SUBMIT_SOURCES * 3)
 _SOURCE_LITERATURE_STRUCTURAL_BLOCK_REASONS = frozenset({
     "directional_receipt_floor_below_min",
+    "source_fact_scope_incoherent",
     "source_fact_diversity_below_min",
     "source_diverse_floor_below_min",
 })
