@@ -2206,15 +2206,21 @@ def _ledger_paths_newest_first(ledger_dir: Path) -> list[Path]:
     )
 
 
-def _domain_ledger_rows(runs_root: Path, domain: str | None) -> list[Json]:
-    rows: list[Json] = []
+def _domain_ledger_entries(
+    runs_root: Path, domain: str | None,
+) -> list[tuple[Path, Json]]:
+    entries: list[tuple[Path, Json]] = []
     for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
         ledger = _json(path, {})
         if isinstance(ledger, dict) and _same_domain(
             _ledger_domain_for_runs(runs_root, ledger), domain,
         ):
-            rows.append(ledger)
-    return rows
+            entries.append((path, ledger))
+    return entries
+
+
+def _domain_ledger_rows(runs_root: Path, domain: str | None) -> list[Json]:
+    return [ledger for _path, ledger in _domain_ledger_entries(runs_root, domain)]
 
 
 def _repairable_decisions_by_fingerprint(
@@ -2876,21 +2882,17 @@ def _repairable_source_literature_topics(
 
 def _recent_source_literature_floor_satisfied_topics(
     ledger_dir: Path, domain: str | None, *, days: int = 2,
+    entries: list[tuple[Path, Json]] | None = None,
 ) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     topics: set[str] = set()
-    for path in _ledger_paths_newest_first(ledger_dir):
+    source = entries if entries is not None else _domain_ledger_entries(ledger_dir.parent, domain)
+    for path, ledger in source:
         if path.name.startswith("_"):
             continue
         with suppress(OSError):
             if path.stat().st_mtime < cutoff:
                 continue
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(ledger_dir.parent, ledger), domain)
-        ):
-            continue
         attempts: list[Any] = []
         fallback = ledger.get("source_literature_fallback")
         if isinstance(fallback, dict):
@@ -2917,23 +2919,27 @@ def _repairable_source_literature_decisions(
 ) -> dict[str, Json]:
     decisions: dict[str, Json] = {}
     checked_topics: set[str] = set()
+    entries = _domain_ledger_entries(runs_root, domain)
     published = _recently_published_topics(
         runs_root / "_daily_ledger",
         days=_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS,
         domain=domain,
+        entries=entries,
     )
-    pending = _pending_source_literature_topics(runs_root / "_daily_ledger", domain)
+    pending = _pending_source_literature_topics(
+        runs_root / "_daily_ledger", domain, entries=entries,
+    )
     source_floor_blocked = _recent_source_floor_topics(
         runs_root / "_daily_ledger", days=2, domain=domain,
-        source_literature_only=True,
+        source_literature_only=True, entries=entries,
     )
     source_floor_satisfied = _recent_source_literature_floor_satisfied_topics(
-        runs_root / "_daily_ledger", domain, days=2,
+        runs_root / "_daily_ledger", domain, days=2, entries=entries,
     )
     structurally_blocked = _recent_source_literature_structural_blocked_topics(
-        runs_root / "_daily_ledger", days=2, domain=domain,
+        runs_root / "_daily_ledger", days=2, domain=domain, entries=entries,
     )
-    ledgers = _domain_ledger_rows(runs_root, domain)
+    ledgers = [ledger for _path, ledger in entries]
     for ledger in ledgers:
         candidate = ledger.get("candidate")
         candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
@@ -3220,20 +3226,17 @@ def _accepted_shape_profiles(
 
 def _recently_published_topics(
     ledger_dir: Path, *, days: int, domain: str | None = None,
+    entries: list[tuple[Path, Json]] | None = None,
 ) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     topics: set[str] = set()
-    for path in ledger_dir.glob("*.json"):
+    source = entries if entries is not None else _domain_ledger_entries(ledger_dir.parent, domain)
+    for path, ledger in source:
         if path.name.startswith("_"):
             continue
         with suppress(OSError):
             if path.stat().st_mtime < cutoff:
                 continue
-        ledger = _json(path, {})
-        if not isinstance(ledger, dict):
-            continue
-        if not _same_domain(_ledger_domain(ledger), domain):
-            continue
         if ledger.get("final_verdict") != _DECISION_ACCEPTED and ledger.get("published") != 1:
             continue
         topic = (
@@ -3288,13 +3291,12 @@ def _recent_negative_topics(
 
 def _pending_source_literature_topics(
     ledger_dir: Path, domain: str | None = None,
+    *, entries: list[tuple[Path, Json]] | None = None,
 ) -> set[str]:
     topics: set[str] = set()
-    for path in ledger_dir.glob("*.json"):
+    source = entries if entries is not None else _domain_ledger_entries(ledger_dir.parent, domain)
+    for path, ledger in source:
         if path.name.startswith("_"):
-            continue
-        ledger = _json(path, {})
-        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
             continue
         if (
             ledger.get("status") != publish_status.CycleStatus.SUBMITTED_TO_RESEARKA.value
@@ -3323,6 +3325,7 @@ def _pending_source_literature_topics(
 def _recent_source_floor_topics(
     ledger_dir: Path, *, days: int, domain: str | None = None,
     source_literature_only: bool = False,
+    entries: list[tuple[Path, Json]] | None = None,
 ) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     topics: set[str] = set()
@@ -3337,15 +3340,13 @@ def _recent_source_floor_topics(
             if topic:
                 topics.add(topic)
 
-    for path in ledger_dir.glob("*.json"):
+    source = entries if entries is not None else _domain_ledger_entries(ledger_dir.parent, domain)
+    for path, ledger in source:
         if path.name.startswith("_"):
             continue
         with suppress(OSError):
             if path.stat().st_mtime < cutoff:
                 continue
-        ledger = _json(path, {})
-        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
-            continue
         if not source_literature_only:
             remember(ledger.get("source_floor_refresh_topics"))
             for batch in ledger.get("refresh_batches") or []:
@@ -3374,18 +3375,17 @@ def _recent_source_floor_topics(
 
 def _recent_source_literature_structural_blocked_topics(
     ledger_dir: Path, *, days: int, domain: str | None = None,
+    entries: list[tuple[Path, Json]] | None = None,
 ) -> set[str]:
     cutoff = time.time() - (max(0, days) * 86400)
     topics: set[str] = set()
-    for path in ledger_dir.glob("*.json"):
+    source = entries if entries is not None else _domain_ledger_entries(ledger_dir.parent, domain)
+    for path, ledger in source:
         if path.name.startswith("_"):
             continue
         with suppress(OSError):
             if path.stat().st_mtime < cutoff:
                 continue
-        ledger = _json(path, {})
-        if not isinstance(ledger, dict) or not _same_domain(_ledger_domain(ledger), domain):
-            continue
         attempts: list[Any] = []
         fallback = ledger.get("source_literature_fallback")
         if isinstance(fallback, dict):

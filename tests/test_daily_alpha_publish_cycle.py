@@ -9856,6 +9856,34 @@ def test_exhausted_source_literature_reads_each_ledger_once(
     assert reads == 12
 
 
+def test_repairable_source_literature_reads_each_ledger_once(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    for idx in range(12):
+        daily._write_json(ledger_dir / f"2026-06-29T06-{idx:02d}-00Z.json", {
+            "domain": {"slug": "longevity_research"},
+            "candidate": {"topic": f"candidate_{idx}"},
+        })
+    reads = 0
+    original_json = daily._json
+
+    def tracked_json(path: Path, default: Any) -> Any:
+        nonlocal reads
+        if path.parent == ledger_dir:
+            reads += 1
+        return original_json(path, default)
+
+    monkeypatch.setattr(daily, "_json", tracked_json)
+
+    assert daily._repairable_source_literature_decisions(
+        root, "longevity_research",
+    ) == {}
+    assert reads == 12
+
+
 def test_repairable_source_literature_exhausted_topic_is_checked_once(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
