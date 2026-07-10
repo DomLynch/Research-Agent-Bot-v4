@@ -2206,6 +2206,17 @@ def _ledger_paths_newest_first(ledger_dir: Path) -> list[Path]:
     )
 
 
+def _domain_ledger_rows(runs_root: Path, domain: str | None) -> list[Json]:
+    rows: list[Json] = []
+    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
+        ledger = _json(path, {})
+        if isinstance(ledger, dict) and _same_domain(
+            _ledger_domain_for_runs(runs_root, ledger), domain,
+        ):
+            rows.append(ledger)
+    return rows
+
+
 def _repairable_decisions_by_fingerprint(
     ledger_dir: Path, domain: str | None = None,
 ) -> dict[str, Json]:
@@ -2470,15 +2481,10 @@ def _previous_source_literature_payload_papers(
 
 def _source_literature_submission_count(
     runs_root: Path, domain: str | None, topic: str,
+    *, ledgers: list[Json] | None = None,
 ) -> int:
     count = 0
-    for path in (runs_root / "_daily_ledger").glob("*.json"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    for ledger in ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain):
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
             continue
@@ -2927,13 +2933,8 @@ def _repairable_source_literature_decisions(
     structurally_blocked = _recent_source_literature_structural_blocked_topics(
         runs_root / "_daily_ledger", days=2, domain=domain,
     )
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    ledgers = _domain_ledger_rows(runs_root, domain)
+    for ledger in ledgers:
         candidate = ledger.get("candidate")
         candidate_topic = str(candidate.get("topic") or "") if isinstance(candidate, dict) else ""
         for _fp, run_ref, decision in _repairable_submission_records(ledger):
@@ -2984,9 +2985,13 @@ def _repairable_source_literature_decisions(
             if not (run_dir / "source_literature_memo.md").exists():
                 continue
             checked_topics.add(topic)
-            if _source_literature_submission_count(
-                runs_root, domain, topic,
-            ) >= _source_literature_attempt_budget(runs_root, domain, topic):
+            submission_count = _source_literature_submission_count(
+                runs_root, domain, topic, ledgers=ledgers,
+            )
+            if submission_count >= _source_literature_attempt_budget(
+                runs_root, domain, topic, ledgers=ledgers,
+                submission_count=submission_count,
+            ):
                 continue
             decisions[topic] = decision
             if len(decisions) >= limit:
@@ -3024,13 +3029,8 @@ def _exhausted_source_literature_topics(
     runs_root: Path, domain: str | None,
 ) -> set[str]:
     counts: dict[str, int] = {}
-    for path in (runs_root / "_daily_ledger").glob("*.json"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
-            continue
+    ledgers = _domain_ledger_rows(runs_root, domain)
+    for ledger in ledgers:
         candidate = ledger.get("candidate")
         if not isinstance(candidate, dict):
             continue
@@ -3042,28 +3042,36 @@ def _exhausted_source_literature_topics(
             counts[topic] = counts.get(topic, 0) + 1
     return {
         topic for topic, count in counts.items()
-        if count >= _source_literature_attempt_budget(runs_root, domain, topic)
+        if count >= _source_literature_attempt_budget(
+            runs_root, domain, topic, ledgers=ledgers, submission_count=count,
+        )
     }
 
 
 def _source_literature_attempt_budget(
     runs_root: Path, domain: str | None, topic: str,
+    *, ledgers: list[Json] | None = None, submission_count: int | None = None,
 ) -> int:
-    for path in _ledger_paths_newest_first(runs_root / "_daily_ledger"):
-        ledger = _json(path, {})
-        if (
-            not isinstance(ledger, dict)
-            or not _same_domain(_ledger_domain_for_runs(runs_root, ledger), domain)
-        ):
+    domain_ledgers = ledgers if ledgers is not None else _domain_ledger_rows(runs_root, domain)
+    for ledger in domain_ledgers:
+        records = _repairable_submission_records(ledger)
+        if not records:
             continue
         candidate = ledger.get("candidate")
         candidate_topic = (
             _source_literature_candidate_topic(runs_root, candidate)
             if isinstance(candidate, dict) else ""
         )
-        for _fp, run_ref, decision in _repairable_submission_records(ledger):
+        for _fp, run_ref, decision in records:
             row_topic = candidate_topic or _source_literature_topic_from_run(run_ref)
             if row_topic == topic:
+                count = (
+                    submission_count
+                    if submission_count is not None else
+                    _source_literature_submission_count(
+                        runs_root, domain, topic, ledgers=domain_ledgers,
+                    )
+                )
                 clean_terminal_resubmit = (
                     _clean_supported_revise(decision)
                     and "external author must resubmit" in _norm(_revision_notes(decision))
@@ -3077,7 +3085,6 @@ def _source_literature_attempt_budget(
                     _clean_supported_revise(decision)
                     and "external author must resubmit" not in _norm(_revision_notes(decision))
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(
@@ -3088,7 +3095,6 @@ def _source_literature_attempt_budget(
                 if _source_literature_parent_link_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     if clean_terminal_resubmit:
                         terminal_count = _source_literature_clean_terminal_submission_count(
                             runs_root, domain, topic,
@@ -3115,7 +3121,6 @@ def _source_literature_attempt_budget(
                 if _source_literature_renderer_feedback_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(
@@ -3126,7 +3131,6 @@ def _source_literature_attempt_budget(
                 if _source_literature_title_ownership_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(
@@ -3137,7 +3141,6 @@ def _source_literature_attempt_budget(
                 if _source_literature_field_ownership_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(
@@ -3148,7 +3151,6 @@ def _source_literature_attempt_budget(
                 if _source_literature_publish_framing_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(
@@ -3159,13 +3161,11 @@ def _source_literature_attempt_budget(
                 if _source_literature_writer_framing_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(budget, count + 1)
                 if (
                     _source_literature_terminal_feedback_repair_needed(decision)
                     and not _clean_supported_revise(decision)
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(
@@ -3176,7 +3176,6 @@ def _source_literature_attempt_budget(
                 if _source_literature_source_scope_repair_needed(
                     runs_root, domain, topic, decision,
                 ):
-                    count = _source_literature_submission_count(runs_root, domain, topic)
                     budget = max(
                         budget,
                         min(

@@ -9827,6 +9827,35 @@ def test_clean_supported_source_literature_revise_gets_one_extra_retry(
     ) == [topic]
 
 
+def test_exhausted_source_literature_reads_each_ledger_once(
+    tmp_path: Path, monkeypatch: MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    ledger_dir = root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    for idx in range(12):
+        daily._write_json(ledger_dir / f"2026-06-29T05-{idx:02d}-00Z.json", {
+            "domain": {"slug": "longevity_research"},
+            "submitted": 1,
+            "candidate": {
+                "topic": f"candidate_{idx}",
+                "run_dir": f"candidate_{idx}-source-literature-test",
+            },
+        })
+    reads = 0
+    original_json = daily._json
+
+    def tracked_json(path: Path, default: Any) -> Any:
+        nonlocal reads
+        reads += 1
+        return original_json(path, default)
+
+    monkeypatch.setattr(daily, "_json", tracked_json)
+
+    assert daily._exhausted_source_literature_topics(root, "longevity_research") == set()
+    assert reads == 12
+
+
 def test_repairable_source_literature_exhausted_topic_is_checked_once(
     tmp_path: Path, monkeypatch: MonkeyPatch,
 ) -> None:
