@@ -122,6 +122,7 @@ def test_publish_summary_counts_incomplete_fullraw_receipt() -> None:
         "candidate_refresh_failed": 1,
         "fullraw_incomplete_receipt": 1,
     }
+    assert summary["next_action"] == "wait_for_fullraw_completion"
 
 
 def test_publish_summary_counts_async_fullraw_sweep() -> None:
@@ -138,6 +139,24 @@ def test_publish_summary_counts_async_fullraw_sweep() -> None:
         "candidate_refresh_failed": 1,
         "fullraw_async_queued": 1,
     }
+    assert summary["next_action"] == "wait_for_fullraw_completion"
+
+
+def test_submit_exit_code_retries_only_live_fullraw_wait() -> None:
+    waiting = {
+        "status": CycleStatus.NO_FRESH_CANDIDATE.value,
+        "published": 0,
+        "refresh_candidates": {
+            "fullraw_probe_events": [{"status": "incomplete_receipt"}],
+        },
+    }
+
+    assert cycle_exit_code(waiting, submit=True) == 1
+    waiting["status"] = CycleStatus.SUBMITTED_TO_RESEARKA.value
+    assert cycle_exit_code(waiting, submit=True) == 2
+    waiting["status"] = CycleStatus.NO_FRESH_CANDIDATE.value
+    waiting["refresh_candidates"] = {"fullraw_probe_events": [{"status": "no_hits"}]}
+    assert cycle_exit_code(waiting, submit=True) == 2
 
 
 def test_publish_summary_uses_terminal_status_for_reviewer_rejection() -> None:

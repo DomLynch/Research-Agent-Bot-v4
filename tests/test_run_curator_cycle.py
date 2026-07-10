@@ -24,6 +24,7 @@ from run_curator_cycle import (
     _child_topics_from_verdict,
     _discovery_top_for_plan,
     _is_publish_ready,
+    _latest_discovery_fullraw_probe,
     _plan_topics,
     _read_discovery_top,
     _recent_signal_topics,
@@ -192,6 +193,24 @@ def test_read_discovery_top_skips_newer_underfloor_when_floor_set(
 
 def test_read_discovery_top_handles_missing_dir() -> None:
     assert _read_discovery_top(Path("/nonexistent")) == []
+
+
+def test_latest_discovery_fullraw_probe_requires_matching_domain(tmp_path: Path) -> None:
+    path = tmp_path / "fresh.json"
+    path.write_text(json.dumps({
+        "domain": {"slug": "ai_research"},
+        "fullraw_seed_probe": {"events": [{"status": "in_progress_poll_due"}]},
+    }), encoding="utf-8")
+
+    assert _latest_discovery_fullraw_probe(
+        tmp_path, domain="ai_research", since=0,
+    ) == {"events": [{"status": "in_progress_poll_due"}]}
+    assert _latest_discovery_fullraw_probe(
+        tmp_path, domain="longevity_research", since=0,
+    ) == {}
+    assert _latest_discovery_fullraw_probe(
+        tmp_path, domain="ai_research", since=path.stat().st_mtime + 1,
+    ) == {}
 
 
 def test_read_discovery_top_handles_malformed_json(tmp_path: Path) -> None:

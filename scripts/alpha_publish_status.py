@@ -96,6 +96,16 @@ REFRESHABLE_SOURCE_FLOOR_STATUSES = frozenset({
     CandidateStatus.MEMO_SOURCE_FLOOR_BELOW_MIN.value,
     CandidateStatus.DIRECT_SOURCE_FLOOR_BELOW_MIN.value,
 })
+_FULLRAW_WAIT_STATUSES = frozenset({
+    "async_queued",
+    "busy",
+    "fullraw_busy_probe_limit_reached",
+    "in_progress_poll_due",
+    "incomplete_receipt",
+    "queue_saturated",
+    "queued",
+    "running",
+})
 
 
 def top_counts(values: Iterable[str], *, limit: int = 5) -> dict[str, int]:
@@ -274,6 +284,19 @@ def no_candidate_reason(considered: list[Json]) -> str:
     return "no eligible non-duplicate memo"
 
 
+def fullraw_wait_pending(ledger: Json) -> bool:
+    refresh = ledger.get("refresh_candidates")
+    events = refresh.get("fullraw_probe_events") if isinstance(refresh, dict) else []
+    return any(
+        isinstance(event, dict)
+        and (
+            str(event.get("status") or "") in _FULLRAW_WAIT_STATUSES
+            or str(event.get("async_status") or "") in {"queued", "running"}
+        )
+        for event in events or []
+    )
+
+
 def publish_summary(ledger: Json) -> Json:
     considered = [r for r in ledger.get("considered") or [] if isinstance(r, dict)]
     attempts = [r for r in ledger.get("cycle_attempts") or [] if isinstance(r, dict)]
@@ -322,9 +345,9 @@ def publish_summary(ledger: Json) -> Json:
         next_action_for_status(status)
         if status else str(ledger.get("next_action") or "inspect_ledger")
     )
-    if (
-        status == CycleStatus.CANDIDATE_REFRESH_FAILED.value
-        and {"fullraw_probe_busy", "fullraw_complete_receipt_missing"} & set(top_blockers)
+    if status in ZERO_OUTPUT_FAILURE_STATUSES and (
+        fullraw_wait_pending(ledger)
+        or {"fullraw_probe_busy", "fullraw_complete_receipt_missing"} & set(top_blockers)
     ):
         next_action = "wait_for_fullraw_completion"
     if handoff_blocked:
@@ -353,10 +376,12 @@ def cycle_exit_code(
     ledger: Json, *, submit: bool, allow_pending_success: bool = False,
 ) -> int:
     status = str(ledger.get("status") or "")
-    if not submit:
-        return 2 if status in ZERO_OUTPUT_FAILURE_STATUSES else 0
     if status in SUBMIT_SUCCESS_STATUSES or int(ledger.get("published") or 0) == 1:
         return 0
+    if status in ZERO_OUTPUT_FAILURE_STATUSES and fullraw_wait_pending(ledger):
+        return 1
+    if not submit:
+        return 2 if status in ZERO_OUTPUT_FAILURE_STATUSES else 0
     if allow_pending_success and status in PENDING_SUCCESS_STATUSES:
         return 0
     return 2

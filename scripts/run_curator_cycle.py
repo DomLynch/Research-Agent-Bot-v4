@@ -391,6 +391,23 @@ def _read_discovery_top(
     return []
 
 
+def _latest_discovery_fullraw_probe(
+    out_dir: Path, *, domain: str, since: float,
+) -> dict[str, Any]:
+    for path in sorted(out_dir.glob("*.json"), reverse=True):
+        if path.stat().st_mtime < since:
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict) or domain_slug(data.get("domain")) != domain:
+            continue
+        probe = data.get("fullraw_seed_probe")
+        return probe if isinstance(probe, dict) else {}
+    return {}
+
+
 def _discovery_row_clears_source_floor(row: dict[str, Any], floor: int) -> bool:
     with suppress(TypeError, ValueError):
         return (
@@ -1077,6 +1094,12 @@ def main() -> int:
         "skipped_below_source_floor": below_floor,
         "stopped_on_ready": stopped_on_ready,
     }
+    fullraw_probe = _latest_discovery_fullraw_probe(
+        _RUNS / "_topics_discovery", domain=profile.slug,
+        since=cycle_start.timestamp(),
+    )
+    if fullraw_probe:
+        payload["fullraw_seed_probe"] = fullraw_probe
     json_path = _CYCLES_DIR / f"{cycle_ts}.json"
     md_path = _CYCLES_DIR / f"{cycle_ts}.md"
     _write_cycle_json(json_path, payload)
