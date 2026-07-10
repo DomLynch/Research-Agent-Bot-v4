@@ -499,6 +499,10 @@ def _ledger_stamp(now: dt.datetime | None = None) -> str:
     return current.replace(microsecond=0).isoformat().replace("+00:00", "Z").replace(":", "-")
 
 
+def _domain_ledger_stamp(domain: str, now: dt.datetime | None = None) -> str:
+    return f"{_ledger_stamp(now)}-{load_domain_profile(domain).slug}"
+
+
 def _submit_token() -> tuple[str, str]:
     for name in _SUBMIT_TOKEN_ENVS:
         token = os.environ.get(name, "").strip()
@@ -7857,7 +7861,7 @@ def run_cycle(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--domain", choices=domain_choices(), default="longevity")
-    parser.add_argument("--date", default=_ledger_stamp())
+    parser.add_argument("--date")
     parser.add_argument("--include-archive", action="store_true")
     parser.add_argument("--refresh-candidates", action="store_true")
     parser.add_argument(
@@ -7893,7 +7897,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     ledger = run_cycle(
-        date=args.date,
+        date=args.date or _domain_ledger_stamp(args.domain),
         domain=args.domain,
         include_archive=args.include_archive,
         refresh_candidates=args.refresh_candidates,

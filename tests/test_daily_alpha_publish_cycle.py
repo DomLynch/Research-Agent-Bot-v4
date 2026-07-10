@@ -733,6 +733,15 @@ def test_ledger_stamp_includes_utc_time_for_twice_daily_runs() -> None:
     assert stamp == "2026-05-26T17-30-01Z"
 
 
+def test_default_ledger_stamp_is_lane_scoped() -> None:
+    now = dt.datetime(2026, 5, 26, 17, 30, 1, tzinfo=dt.UTC)
+
+    assert daily._domain_ledger_stamp("ai_research", now).endswith("-ai_research")
+    assert daily._domain_ledger_stamp("longevity_research", now).endswith(
+        "-longevity_research",
+    )
+
+
 def test_dry_run_selects_best_candidate_and_writes_ledger(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     weak = _verdict("weak", score=80)
