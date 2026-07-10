@@ -1979,6 +1979,15 @@ _SOURCE_LIT_DUPLICATE_BLOCK_REASONS = frozenset({
 })
 
 
+def _source_lit_family_cooldown_days(domain: str) -> int:
+    return max(
+        1,
+        publish_cycle._domain_alpha_memo_int(
+            domain, "source_literature_family_cooldown_days", 30,
+        ),
+    )
+
+
 def _recent_source_lit_attempt_topics(
     runs_root: Path, domain: str, reasons: frozenset[str], *, days: int = 2,
 ) -> set[str]:
@@ -2019,7 +2028,7 @@ def _recent_source_lit_attempt_topics(
 def _recent_source_literature_blocked_topics(runs_root: Path, domain: str) -> set[str]:
     ledger_dir = runs_root / "_daily_ledger"
     submitted_path = ledger_dir / "_submitted_fingerprints.json"
-    days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
+    days = _source_lit_family_cooldown_days(domain)
     family_blocked = (
         publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
         | publish_cycle._recent_submission_topics(submitted_path, days=days, domain=domain)
@@ -2083,7 +2092,7 @@ def _recent_reviewer_revise_submission_topic_keys(
 
 def _hard_source_literature_blocked_topic_keys(runs_root: Path, domain: str) -> set[str]:
     ledger_dir = runs_root / "_daily_ledger"
-    days = int(getattr(publish_cycle, "_DEFAULT_PUBLISHED_TOPIC_COOLDOWN_DAYS", 30))
+    days = _source_lit_family_cooldown_days(domain)
     hard_blocked = (
         publish_cycle._recently_published_topics(ledger_dir, days=days, domain=domain)
         | publish_cycle._recent_negative_topics(ledger_dir, days=days, domain=domain)
@@ -2878,6 +2887,8 @@ def main() -> int:
                                 if (
                                     candidate_key in existing_topic_keys
                                     or candidate_key in source_lit_attempted_topic_keys
+                                    or candidate_key in blocked_topic_keys
+                                    or candidate_key in pending_source_lit_topic_keys
                                 ):
                                     continue
                                 ready_papers = _cached_ready_source_literature_papers(
