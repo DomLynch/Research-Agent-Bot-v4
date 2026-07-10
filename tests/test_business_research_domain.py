@@ -1581,6 +1581,8 @@ def test_business_sweep_fullraw_probe_preserves_in_progress_cache_receipt(
 def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
+    import time as time_mod
+
     import agent.topic_discovery as topic_discovery_mod
     import scripts.run_topic_discovery as discovery
 
@@ -1594,7 +1596,7 @@ def test_business_sweep_fullraw_probe_waits_for_admitted_async_completion(
         str(tmp_path / "fullraw.lock"),
     )
     monkeypatch.setattr(sweep, "_business_fullraw_queries", lambda _topic: ("firm performance",))
-    monkeypatch.setattr(sweep.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(time_mod, "sleep", lambda seconds: sleeps.append(seconds))
     discovery._FULLRAW_PROBE_EVENTS.clear()
 
     def fake_seed_fullraw(query: str, **_kwargs: Any) -> list[dict[str, Any]]:
@@ -7463,6 +7465,46 @@ def test_business_sweep_blocks_recent_source_floor_topic_without_cached_ready(
     assert topic in sweep._recent_source_literature_blocked_topics(
         runs_root, "business_research",
     )
+
+
+def test_business_sweep_expands_published_source_lit_family_blocks(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    runs_root = tmp_path / "runs"
+    ledger_dir = runs_root / "_daily_ledger"
+    ledger_dir.mkdir(parents=True)
+    topic = "supply_chain_resilience_profitability"
+    cycle._write_json(ledger_dir / "2026-07-02T15-04-49Z.json", {
+        "domain": {"slug": "business_research"},
+        "status": "published",
+        "published": 1,
+        "submitted_topic": topic,
+        "published_topic": topic,
+        "source_literature_fallback": {
+            "topic": topic,
+            "status": "selected",
+            "reason": "ok",
+        },
+    })
+    monkeypatch.setattr(
+        cycle,
+        "_repairable_source_literature_topics",
+        lambda *_args, **_kwargs: [],
+    )
+
+    expected = {
+        sweep._topic_key(variant)
+        for variant in cycle._source_literature_fetch_topics(topic)
+    }
+
+    assert expected <= sweep._recent_source_literature_blocked_topics(
+        runs_root, "business_research",
+    )
+    assert expected <= sweep._hard_source_literature_blocked_topic_keys(
+        runs_root, "business_research",
+    )
+    assert sweep._topic_key("supply_chain_profitability") in expected
 
 
 def test_business_sweep_allows_repairable_directional_underfill_topic(

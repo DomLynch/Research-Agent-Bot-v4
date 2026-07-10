@@ -2474,15 +2474,15 @@ def main() -> int:
                 args.runs_root, domain,
             )
             pending_source_lit_topic_keys = {
-                _topic_key(topic)
+                key
                 for topic in publish_cycle._pending_source_literature_topics(
                     args.runs_root / "_daily_ledger",
                     domain,
                 )
-                if _topic_key(topic)
+                for key in _source_lit_topic_key_variants(topic)
             }
             recent_submission_topic_keys = {
-                _topic_key(topic)
+                key
                 for topic in publish_cycle._recent_submission_topics(
                     args.runs_root / "_daily_ledger" / "_submitted_fingerprints.json",
                     days=int(
@@ -2494,7 +2494,7 @@ def main() -> int:
                     ),
                     domain=domain,
                 )
-                if _topic_key(topic)
+                for key in _source_lit_topic_key_variants(topic)
             }
             soft_source_lit_repair_keys = {
                 _topic_key(topic)
