@@ -254,6 +254,43 @@ def test_select_boundary_papers_topups_biomedical_directional_underfill() -> Non
     ) == 2
 
 
+def test_select_boundary_papers_drops_title_only_fact_match() -> None:
+    topic = "telomere"
+    irrelevant = {
+        "title": "Telomere cohort physical activity profile",
+        "doi": "10.9100/irrelevant",
+        "source_fact": {
+            "canonical_phrase": "67.3% of participants were currently exercising",
+            "intervention": "physical activity prevalence",
+            "endpoint": "exercise prevalence",
+        },
+    }
+    aligned = [{
+        "title": f"Telomere intervention lifespan outcome {idx}",
+        "doi": f"10.9100/aligned-{idx}",
+        "source_fact": {
+            "canonical_phrase": "telomere intervention increased lifespan",
+            "intervention": "telomere intervention",
+            "endpoint": "lifespan",
+        },
+    } for idx in range(5)]
+
+    selected = literature.select_boundary_papers(
+        topic, [irrelevant, *aligned], 5, profile_slug="longevity_research",
+    )
+
+    assert len(selected) == 5
+    assert irrelevant not in selected
+
+
+def test_topic_signal_label_drops_trailing_discovery_modifiers() -> None:
+    assert (
+        literature._topic_signal_label("caloric_restriction_longevity_anti_aging")
+        == "caloric restriction"
+    )
+    assert literature._topic_signal_label("aging_clocks") == "aging clocks"
+
+
 def test_select_boundary_papers_preserves_fact_backed_floor_before_metadata() -> None:
     topic = "supply_chain_resilience_performance"
     fact_backed = [

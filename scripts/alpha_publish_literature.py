@@ -576,6 +576,12 @@ def select_boundary_papers(
         and topic_relevant(topic, paper)
         and str(paper.get("title") or "").strip()
         and citable_source_ref(paper)
+        and (
+            not profile_slug
+            or _non_biomedical(profile_slug)
+            or not _paper_has_substantive_source_fact(paper)
+            or _source_fact_has_active_topic(paper, topic)
+        )
     ]
     if len(usable) < min_sources:
         return usable
@@ -877,6 +883,23 @@ def _paper_has_active_topic_phrase(paper: Json, topic: str) -> bool:
         _text_has_topic_phrase(paper.get("title") or paper.get("paper_title"), topic)
         or _text_has_topic_phrase(fact.get("intervention"), topic)
     )
+
+
+def _source_fact_has_active_topic(paper: Json, topic: str) -> bool:
+    fact = paper.get("source_fact")
+    if not isinstance(fact, dict):
+        return False
+    topic_tokens = _topic_token_sequence(topic)
+    words = title_key(" ".join(str(fact.get(key) or "") for key in (
+        "intervention", "endpoint", "metric", "canonical_phrase", "population",
+    ))).split()
+    if topic_tokens and all(
+        any(_token_matches(word, token) or _token_matches(token, word) for word in words)
+        for token in topic_tokens
+    ):
+        return True
+    initials = "".join(token[0] for token in topic_tokens)
+    return len(initials) >= 2 and initials in words
 
 
 def _topic_effect_ablated(finding: str, topic: str) -> bool:
@@ -1698,6 +1721,8 @@ def _topic_title_label(topic: str) -> str:
 
 def _topic_signal_label(topic: str, *, non_bio: bool = False) -> str:
     words = _topic_title_label(topic).split()
+    while len(words) > 1 and words[-1].casefold() in _GENERIC_TOPIC_TOKENS:
+        words.pop()
     if non_bio and len(words) > 2 and words[-1] in {
         "firm", "firms", "company", "companies", "organization", "organizations",
     }:
