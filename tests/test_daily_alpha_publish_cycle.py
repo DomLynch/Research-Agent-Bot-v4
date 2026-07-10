@@ -18293,7 +18293,7 @@ def test_source_literature_payload_separates_comparator_and_economic_rows(
     assert "Routing domain `longevity_research` is publication-lane metadata only" in markdown
 
 
-def test_source_literature_payload_separates_intervention_from_predictive_rows(
+def test_source_literature_payload_drops_title_only_intervention_rows(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "repo"
@@ -18364,15 +18364,19 @@ def test_source_literature_payload_separates_intervention_from_predictive_rows(
     )
 
     markdown = payload["markdown"]
-    assert "directionally favorable: 2 receipt(s)" in markdown
+    assert "directionally favorable: 2 receipt(s)" not in markdown
     assert "non-clinical/predictive: 2 receipt(s)" in markdown
+    assert {source["doi"] for source in payload["source_bundle"]} == {
+        "10.1234/gut3", "10.1234/gut4", "10.1234/gut5",
+    }
     assert "other/mixed: 1 receipt(s)" in markdown
     assert "other/mixed: 5 receipt(s)" not in markdown
-    assert "Evidence role grouping; non-directional method receipts are context only" in payload["abstract"]
-    assert "not one pooled evidence front" in markdown
-    assert "intervention signals plus separate predictive evidence" in payload["abstract"]
+    assert "context/antecedent/model receipts: 3 excluded from effect support" in payload["abstract"]
+    assert "The prebiotic improves cognition" not in markdown
+    assert "a 5-day fast reduces systolic blood pressure" not in markdown
+    assert "intervention signals plus separate predictive evidence" not in payload["abstract"]
     assert payload["title"] == (
-        "gut microbiome: separated intervention and predictive evidence fronts"
+        "gut microbiome: one bounded, context-dependent signal across receipts"
     )
 
 
